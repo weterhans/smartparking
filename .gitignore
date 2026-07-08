@@ -1,0 +1,28 @@
+# Lingkungan Virtual Python (Sangat besar dan tidak boleh di-push)
+venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Konfigurasi Teks Editor / AI
+.vscode/
+.claude/
+.idea/
+
+# Dokumen Skripsi (Sangat besar dan berisiko jika di-push ke publik)
+*.docx
+*.doc
+*.pdf
+~$*.docx
+
+# File Teks Sementara (kecuali requirements.txt)
+*.txt
+!requirements.txt
+!README.md
+
+# Log Server dan File Sistem
+*.log
+.DS_Store
+Thumbs.db

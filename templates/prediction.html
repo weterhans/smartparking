@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .hist-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .hist-bar-bg {
+    flex: 1;
+    background: var(--surface-3);
+    border-radius: 99px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  .hist-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0;
+    background: var(--green);
+    transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 10px var(--green-glow);
+  }
+
+  .modal-content {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-md) !important;
+  }
+
+  .modal-header {
+    background: var(--surface-2) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+</style>
+
+<!-- Hero -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-5 mt-3" data-aos="fade-down">
+  <div>
+    <div
+      style="display:inline-flex;align-items:center;padding:6px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:99px;font-size:0.75rem;font-weight:600;letter-spacing:1px;color:var(--text-secondary);margin-bottom:1rem;">
+      <span class="pulse-dot me-2"></span>
+      PREDICTION & ANALYTICS
+    </div>
+    <h1 class="page-title" style="font-size:3rem;font-weight:900;letter-spacing:-2px;margin:0;">
+      Analisis Pengguna Parkir
+    </h1>
+  </div>
+  <button class="btn btn-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#addDataModal">
+    <i class="bi bi-plus-lg me-2"></i>Input Data Historis
+  </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat, msg in messages %}
+<div class="alert alert-{{ cat }} alert-dismissible fade show mb-4 small">
+  {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"
+    style="filter:invert(1) opacity(0.5);"></button>
+</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<!-- Prediction Summary -->
+{% if pred_summary %}
+<div class="row g-4 mb-5">
+  <!-- Estimasi Besok -->
+  <div class="col-md-6" data-aos="fade-up" data-aos-delay="0">
+    <div class="card h-100 feature-card glow-card glass-tilt" data-tilt
+      style="border-left:4px solid #0984e3!important;background:linear-gradient(135deg,#0a0a0a,var(--surface-2));">
+      <div class="card-body py-4 px-5 d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+          <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;">
+            Estimasi Besok
+          </div>
+          <div style="font-size:3.5rem;font-weight:900;color:var(--text);letter-spacing:-2px;line-height:1;">
+            {{ pred_summary.tomorrow }} <span style="font-size:1.2rem;color:var(--text-dim);font-weight:600;letter-spacing:0;">Kendaraan</span>
+          </div>
+        </div>
+        <div style="width:60px;height:60px;border-radius:16px;background:rgba(9,132,227,0.1);color:#0984e3;display:flex;align-items:center;justify-content:center;font-size:2rem;">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estimasi Total Minggu Depan -->
+  <div class="col-md-6" data-aos="fade-up" data-aos-delay="50">
+    <div class="card h-100 feature-card glow-card glass-tilt" data-tilt
+      style="border-left:4px solid var(--green)!important;background:linear-gradient(135deg,#0a0a0a,var(--surface-2));">
+      <div class="card-body py-4 px-5 d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+          <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:700;">
+            Estimasi Total Minggu Depan
+          </div>
+          {% if pred_summary.has_2_weeks %}
+          <div style="font-size:3.5rem;font-weight:900;color:var(--text);letter-spacing:-2px;line-height:1;">
+            {{ pred_summary.next_7_days }} <span style="font-size:1.2rem;color:var(--text-dim);font-weight:600;letter-spacing:0;">Kendaraan</span>
+          </div>
+          {% else %}
+          <div style="font-size:1.1rem;font-weight:600;color:var(--red);margin-top:10px;line-height:1.4;">
+            Belum Cukup Data<br><span style="font-size:0.85rem;color:var(--text-muted);font-weight:500;">(Butuh Minimal 14 Hari)</span>
+          </div>
+          {% endif %}
+        </div>
+        <div style="width:60px;height:60px;border-radius:16px;background:var(--green-muted);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:2rem;">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<!-- Charts -->
+{% if chart_daily %}
+<div class="row g-4 mb-5">
+  <div class="col-lg-6" data-aos="fade-up" data-aos-delay="0">
+    <div class="card h-100 feature-card glass-tilt" data-tilt data-tilt-max="2" data-tilt-glare="false">
+      <div class="card-body p-4 p-md-5">
+        <h4 style="font-size:1.15rem;font-weight:800;color:white;letter-spacing:-0.5px;margin-bottom:1.5rem;">Grafik Harian</h4>
+        {{ chart_daily | safe }}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6" data-aos="fade-up" data-aos-delay="50">
+    <div class="card h-100 feature-card glass-tilt" data-tilt data-tilt-max="2" data-tilt-glare="false">
+      <div class="card-body p-4 p-md-5">
+        <h4 style="font-size:1.15rem;font-weight:800;color:white;letter-spacing:-0.5px;margin-bottom:1.5rem;">Agregat Mingguan</h4>
+        {{ chart_weekly | safe }}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card mb-5 glass-tilt" data-aos="fade-up" data-tilt data-tilt-max="2" data-tilt-glare="false">
+  <div class="card-body text-center py-5">
+    <div class="sp-loader mb-4"></div>
+    <h4 style="font-weight:800;color:var(--text);letter-spacing:-0.5px;">Membutuhkan Data</h4>
+    <p style="color:var(--text-muted);margin-bottom:1.5rem;">Sistem Machine Learning membutuhkan minimal 3 data historis
+      harian untuk mulai memprediksi pola kepadatan.</p>
+    <button class="btn btn-primary rounded-pill px-5 py-3 font-weight-700" data-bs-toggle="modal"
+      data-bs-target="#addDataModal">
+      Input Data Sekarang
+    </button>
+  </div>
+</div>
+{% endif %}
+
+<!-- History Table -->
+<div class="card mb-5 glass-tilt" data-aos="fade-up" data-tilt data-tilt-max="2" data-tilt-glare="false">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-4">
+      <h4 style="font-size:1.25rem;font-weight:800;color:white;letter-spacing:-0.5px;margin:0;">Riwayat Data Aktual</h4>
+      <div class="d-flex gap-3 align-items-center">
+        <div class="d-flex gap-2 align-items-center">
+          <label style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Urutkan:</label>
+          <select id="sortOrder" class="form-select form-select-sm"
+            style="background:var(--bg); border:1px solid var(--border-md); color:var(--text); width:110px; border-radius:8px;">
+            <option value="desc">Terbaru</option>
+            <option value="asc">Terlama</option>
+          </select>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <label style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Tampilkan:</label>
+          <select id="rowLimit" class="form-select form-select-sm"
+            style="background:var(--bg); border:1px solid var(--border-md); color:var(--text); width:80px; border-radius:8px;">
+            <option value="5">5</option>
+            <option value="7">7</option>
+            <option value="14">14</option>
+            <option value="21">21</option>
+            <option value="28">28</option>
+            <option value="35">35</option>
+            <option value="42">42</option>
+            <option value="49">49</option>
+            <option value="56">56</option>
+            <option value="all">Semua</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0" id="historyTable" style="--bs-table-bg: var(--surface-2); --bs-table-color: var(--text);">
+        <thead>
+          <tr>
+            <th style="color:var(--text-secondary);font-weight:700;">Tanggal</th>
+            <th style="color:var(--text-secondary);font-weight:700;">Frekuensi Parkir</th>
+            <th style="color:var(--text-secondary);font-weight:700;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in history | sort(attribute='date', reverse=True) %}
+          <tr class="history-row" data-date="{{ h.date.isoformat() }}">
+            <td style="font-weight:700;color:var(--text);">{{ h.date.strftime('%d %B %Y') }}</td>
+            <td style="width:45%;">
+              <div class="hist-bar-wrap">
+                <span style="font-weight:800;color:var(--text);min-width:40px;font-size:1.1rem;">{{ h.vehicle_count
+                  }}</span>
+                <div class="hist-bar-bg">
+                  <div class="hist-bar-fill" data-count="{{ h.vehicle_count }}"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm rounded-pill px-3"
+                  style="background:var(--surface-3);color:var(--text);font-weight:600;" data-bs-toggle="modal"
+                  data-bs-target="#editDataModal{{ loop.index }}">Edit</button>
+                <form action="{{ url_for('prediction_delete', date_str=h.date.isoformat()) }}" method="POST"
+                  onsubmit="return confirm('Hapus data historis ini?')">
+                  <button class="btn btn-sm rounded-pill px-3"
+                    style="background:var(--red-muted);color:var(--red);border:1px solid rgba(239,68,68,0.2);font-weight:600;">Hapus</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Edit Modal -->
+          <div class="modal fade" id="editDataModal{{ loop.index }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header px-4 py-3">
+                  <h5 class="modal-title" style="font-weight:800;color:var(--text);font-size:1.1rem;">Edit Data Historis
+                  </h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('prediction_edit', date_str=h.date.isoformat()) }}" method="POST">
+                  <div class="modal-body p-4">
+                    <div class="mb-3">
+                      <label class="form-label">Tanggal</label>
+                      <input type="text" class="form-control" value="{{ h.date.strftime('%d %B %Y') }}" readonly
+                        style="background:var(--surface-2);color:var(--text-muted);">
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Jumlah Kendaraan</label>
+                      <input type="number" name="vehicle_count" class="form-control" min="0"
+                        value="{{ h.vehicle_count }}" required>
+                    </div>
+                  </div>
+                  <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill"
+                      data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Simpan Perubahan</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center py-5 text-muted fw-500">Belum ada riwayat tercatat.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addDataModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header px-4 py-3">
+        <h5 class="modal-title" style="font-weight:800;color:var(--text);font-size:1.1rem;">Tambah Data Harian</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('prediction_add') }}" method="POST">
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label">Tanggal</label><input type="date" name="date" class="form-control"
+              required></div>
+          <div class="mb-3"><label class="form-label">Jumlah Kendaraan</label><input type="number" name="vehicle_count"
+              class="form-control" min="0" placeholder="e.g. 45" required>
+            <div class="form-text mt-2" style="color:var(--text-muted);font-size:0.8rem;">Masukkan total agregat
+              kendaraan yang parkir penuh di hari tersebut.</div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 px-4 pb-4 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary rounded-pill px-4">Simpan Historis</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Fill up chart bars
+    const bars = document.querySelectorAll('.hist-bar-fill');
+    if (bars.length > 0) {
+      const maxCount = Math.max(...[...bars].map(el => parseInt(el.dataset.count) || 0), 1);
+      setTimeout(() => {
+        bars.forEach(el => {
+          el.style.width = Math.min((parseInt(el.dataset.count) || 0) / maxCount * 100, 100) + '%';
+        });
+      }, 500);
+    }
+
+    // Move modals to body
+    document.querySelectorAll('.modal').forEach(modal => {
+      document.body.appendChild(modal);
+    });
+
+    // Sorting & Limiting functionality
+    const sortSelect = document.getElementById('sortOrder');
+    const limitSelect = document.getElementById('rowLimit');
+    
+    function applySortAndLimit() {
+      const tbody = document.querySelector('#historyTable tbody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr.history-row'));
+      if (rows.length === 0) return;
+
+      const order = sortSelect ? sortSelect.value : 'desc';
+      rows.sort((a, b) => {
+        const dateA = new Date(a.dataset.date).getTime();
+        const dateB = new Date(b.dataset.date).getTime();
+        return order === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+
+      const limitStr = limitSelect ? limitSelect.value : '5';
+      const limit = limitStr === 'all' ? rows.length : parseInt(limitStr);
+
+      rows.forEach((row, index) => {
+        tbody.appendChild(row);
+        if (index < limit) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    if (sortSelect) sortSelect.addEventListener('change', applySortAndLimit);
+    if (limitSelect) limitSelect.addEventListener('change', applySortAndLimit);
+    
+    // Apply limit on page load
+    applySortAndLimit();
+  });
+</script>
+{% endblock %}

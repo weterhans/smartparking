@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Hero -->
+<div class="mb-5 text-center mt-3" data-aos="fade-down">
+  <div style="display:inline-flex;align-items:center;padding:6px 16px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:99px;font-size:0.75rem;font-weight:700;letter-spacing:1.5px;color:var(--green);margin-bottom:1.5rem;">
+    ACCOUNT SETTINGS
+  </div>
+  <h1 class="page-title" style="font-size:2.8rem;font-weight:900;letter-spacing:-2px;margin:0;">
+    Profil Saya
+  </h1>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8" data-aos="fade-up">
+
+    <div class="card" style="border-radius:24px;overflow:visible;position:relative;background:rgba(14,15,17,0.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.10);">
+
+      <!-- Top Decorative Banner -->
+      <div style="background:linear-gradient(135deg,#071412,#0d1f1b,#0a1510);height:130px;border-radius:24px 24px 0 0;position:relative;overflow:hidden;">
+        <!-- Grid pattern -->
+        <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(34,197,94,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(34,197,94,0.05) 1px,transparent 1px);background-size:28px 28px;"></div>
+        <!-- Glow -->
+        <div style="position:absolute;bottom:-60px;left:50%;transform:translateX(-50%);width:260px;height:120px;background:radial-gradient(ellipse,rgba(34,197,94,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+      </div>
+
+      <div class="card-body p-0">
+
+        <!-- Avatar row -->
+        <div style="padding:0 2.5rem;margin-top:-55px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1.25rem;margin-bottom:2rem;">
+          <!-- Avatar -->
+          <div style="width:100px;height:100px;border-radius:22px;background:var(--green);border:5px solid #0a1510;display:flex;align-items:center;justify-content:center;font-size:2.4rem;font-weight:900;color:var(--bg);box-shadow:0 8px 32px var(--green-glow),0 0 0 1px rgba(34,197,94,0.3);animation:floatBob 4s ease-in-out infinite;flex-shrink:0;position:relative;z-index:2;">
+            {{ current_user.nama[0]|upper if current_user.nama else current_user.username[0]|upper }}
+          </div>
+          <!-- Edit Button -->
+          <a href="{{ url_for('edit_profile') }}" class="btn btn-success-brand rounded-pill px-5 py-2" style="font-size:0.9rem;">
+            <i class="bi bi-pencil me-2"></i>Edit Profil
+          </a>
+        </div>
+
+        <!-- Name -->
+        <div style="padding:0 2.5rem 1.5rem;">
+          <h2 style="font-size:1.9rem;font-weight:900;color:var(--text);letter-spacing:-1px;margin-bottom:4px;">
+            {{ current_user.nama or current_user.username }}
+          </h2>
+          <p style="font-size:0.95rem;color:var(--text-muted);font-weight:500;margin:0;">@{{ current_user.username }}</p>
+        </div>
+
+        <hr style="border-color:rgba(255,255,255,0.07);margin:0;">
+
+        <!-- Info Grid -->
+        <div class="row g-0" style="padding:1.5rem;">
+          {% set info_items = [
+            ('envelope-fill', 'Email Address', current_user.email or '—'),
+            ('telephone-fill', 'No. HP', current_user.no_hp or '—'),
+            ('gender-ambiguous', 'Jenis Kelamin', current_user.jenis_kelamin or '—'),
+            ('patch-check-fill', 'Role Access', 'Administrator'),
+          ] %}
+          {% for icon, label, value in info_items %}
+          <div class="col-md-6 p-2" data-aos="fade-up" data-aos-delay="{{ loop.index0 * 60 }}">
+            <div style="padding:20px 22px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);height:100%;transition:all 0.22s;" onmouseover="this.style.borderColor='rgba(34,197,94,0.25)';this.style.background='rgba(34,197,94,0.04)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)';this.style.background='rgba(255,255,255,0.03)'">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <i class="bi bi-{{ icon }}" style="color:var(--green);font-size:0.9rem;"></i>
+                <span style="font-size:0.72rem;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);font-weight:700;">{{ label }}</span>
+              </div>
+              <div style="font-size:1.05rem;font-weight:700;color:var(--text);">
+                {% if label == 'Role Access' %}
+                  <span class="tag-green">{{ value }}</span>
+                {% else %}
+                  {{ value }}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div><!-- /.card-body -->
+    </div><!-- /.card -->
+  </div>
+</div>
+{% endblock %}

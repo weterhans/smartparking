@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{# Inject auth-page class on <body> so CSS hides nav/footer #}
+{% block body_class %}auth-page{% endblock %}
+{% block footer_block %}{% endblock %}
+
+{% block content %}
+<div class="auth-bg">
+
+  <!-- Animated radial glow lights -->
+  <div class="auth-glow auth-glow--left"></div>
+  <div class="auth-glow auth-glow--right"></div>
+
+  <div class="auth-split-wrap">
+
+    <!-- ══ LEFT COLUMN: Branding ═══════════════════════════ -->
+    <div class="auth-left" data-aos="fade-right">
+      <!-- Logo Icon -->
+      <div class="auth-brand-icon">
+        <i class="bi bi-p-square-fill"></i>
+      </div>
+
+      <!-- Title -->
+      <h1 class="auth-title">
+        Smart<br>
+        <span class="auth-title--green">Parking</span><br>
+        System
+      </h1>
+
+      <!-- Description -->
+      <p class="auth-desc">
+        Platform manajemen parkir cerdas berbasis WSN — monitoring
+        real-time, keuangan, langganan, dan prediksi kepadatan.
+      </p>
+
+      <!-- Feature Pills -->
+      <div class="auth-pills">
+        <span class="auth-pill"><i class="bi bi-display me-1"></i>Monitoring</span>
+        <span class="auth-pill"><i class="bi bi-wallet2 me-1"></i>Finance</span>
+        <span class="auth-pill"><i class="bi bi-card-checklist me-1"></i>Subscription</span>
+        <span class="auth-pill"><i class="bi bi-graph-up-arrow me-1"></i>Prediction</span>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT COLUMN: Form Card ═════════════════════════ -->
+    <div class="auth-right" data-aos="fade-left" data-aos-delay="100">
+      <div class="auth-card">
+        <h3 class="auth-card-title">Welcome back 👋</h3>
+        <p class="auth-card-sub">Masuk untuk melanjutkan ke dashboard</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} py-2 mb-3 small" style="border-radius:10px;">
+            <i class="bi bi-exclamation-circle me-1"></i>{{ msg }}
+          </div>
+          {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+          <!-- Username -->
+          <div class="mb-3">
+            <label class="auth-label">Username</label>
+            <div class="auth-input-group">
+              <span class="auth-input-icon"><i class="bi bi-person"></i></span>
+              <input type="text" name="username" class="auth-input"
+                     placeholder="Masukkan username" required autocomplete="username">
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="mb-4">
+            <label class="auth-label">Password</label>
+            <div class="auth-input-group">
+              <span class="auth-input-icon"><i class="bi bi-lock"></i></span>
+              <input type="password" id="passInput" name="password" class="auth-input auth-input--pw"
+                     placeholder="Masukkan password" required>
+              <span class="auth-input-eye" id="togglePw">
+                <i class="bi bi-eye" id="eyeIcon"></i>
+              </span>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="auth-btn-submit">
+            <i class="bi bi-box-arrow-in-right me-2"></i>LOGIN
+          </button>
+        </form>
+
+        <!-- Footer links -->
+        <div class="auth-card-links">
+          <a href="{{ url_for('auth.forgot_password') }}">Lupa password?</a>
+          &nbsp;·&nbsp;
+          <a href="{{ url_for('auth.register') }}">Daftar akun baru</a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.auth-split-wrap -->
+</div><!-- /.auth-bg -->
+
+<script>
+  document.getElementById('togglePw').addEventListener('click', function () {
+    const inp = document.getElementById('passInput');
+    const ico = document.getElementById('eyeIcon');
+    if (inp.type === 'password') { inp.type = 'text'; ico.className = 'bi bi-eye-slash'; }
+    else { inp.type = 'password'; ico.className = 'bi bi-eye'; }
+  });
+
+  if (typeof gsap !== 'undefined') {
+    gsap.from('.auth-title', { y: 28, opacity: 0, duration: 0.7, ease: 'power3.out', delay: 0.3 });
+    gsap.from('.auth-pill', { y: 18, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power2.out', delay: 0.6 });
+  }
+</script>
+{% endblock %}

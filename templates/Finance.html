@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<!-- Hero -->
+<div class="mb-5 text-center mt-3" data-aos="fade-down">
+  <div
+    style="display:inline-flex;align-items:center;padding:6px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:99px;font-size:0.75rem;font-weight:600;letter-spacing:1px;color:white;margin-bottom:1.5rem;">
+    <span class="pulse-dot me-2"></span>
+    MANAJEMEN KEUANGAN
+  </div>
+  <h1 class="page-title" style="font-size:3rem;font-weight:900;letter-spacing:-2px;margin-bottom:1rem;">
+    Data Financial & Tagihan
+  </h1>
+  <!-- Tombol Tambah Transaksi -->
+  <button class="btn px-4 py-2 mt-2" data-bs-toggle="modal" data-bs-target="#addTxModal"
+    style="background:var(--green);color:#000;font-weight:700;border-radius:99px;font-size:0.9rem;border:none;transition:all 0.3s ease;">
+    <i class="bi bi-plus-circle me-2"></i>Tambah Transaksi
+  </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat, msg in messages %}
+<div class="alert alert-{{ cat }} alert-dismissible fade show mb-4 small" style="max-width:600px;margin:0 auto;">
+  {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"
+    style="filter:invert(1) opacity(0.5);"></button>
+</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<!-- ═══ Modal: Tambah Transaksi Manual ═══ -->
+<div class="modal fade" id="addTxModal" tabindex="-1" aria-labelledby="addTxLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content"
+      style="background:var(--surface-2);border:1px solid var(--border-md);border-radius:20px;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="addTxLabel" style="font-weight:800;color:white;">
+          <i class="bi bi-receipt-cutoff me-2" style="color:var(--green);"></i>Input Transaksi Manual
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('finance_add') }}">
+        <div class="modal-body pt-3">
+          <div class="row g-3">
+            <!-- Slot -->
+            <div class="col-6">
+              <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Slot Parkir *</label>
+              <select name="slot_id" class="form-select"
+                style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;"
+                required>
+                <option value="" disabled selected>Pilih slot</option>
+                <option value="Slot_A1">Slot A1</option>
+                <option value="Slot_A2">Slot A2</option>
+                <option value="Slot_A3">Slot A3</option>
+                <option value="Slot_A4">Slot A4</option>
+                <option value="Slot_A5">Slot A5</option>
+                <option value="Slot_A6">Slot A6</option>
+              </select>
+            </div>
+            <!-- Tipe Kendaraan -->
+            <div class="col-6">
+              <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Tipe
+                Kendaraan</label>
+              <select name="vehicle_type" class="form-select"
+                style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;">
+                <option value="Kecil" selected>Kecil</option>
+                <option value="Besar">Besar</option>
+              </select>
+            </div>
+            <!-- ID Pengguna -->
+            <div class="col-6">
+              <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">ID Pengguna</label>
+              <input type="text" name="user_id" class="form-control" placeholder="Guest"
+                style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;">
+            </div>
+            <!-- Tanggal -->
+            <div class="col-6">
+              <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Tanggal *</label>
+              <input type="date" name="date" class="form-control" required
+                style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;">
+            </div>
+            <!-- Durasi -->
+            <div class="col-6">
+              <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Durasi Tambahan (jam)</label>
+              <input type="number" name="duration_hours" class="form-control" value="0" min="0" max="24"
+                style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;"
+                id="durationInput">
+            </div>
+
+          </div>
+
+          <!-- Preview Biaya -->
+          <div class="mt-4 p-3 text-center"
+            style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:14px;">
+            <div
+              style="color:rgba(255,255,255,0.6);font-size:0.75rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;">
+              Estimasi Biaya</div>
+            <div id="feePreview" style="font-size:2rem;font-weight:900;color:var(--green);letter-spacing:-1px;">Rp 5,000</div>
+            <div id="tariffText" style="color:rgba(255,255,255,0.5);font-size:0.8rem;">Dasar: Rp 5.000 + Rp 2.000/jam</div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+            style="color:white;border-color:rgba(255,255,255,0.2);">Batal</button>
+          <button type="submit" class="btn px-4 rounded-pill"
+            style="background:var(--green);color:#000;font-weight:700;">
+            <i class="bi bi-save me-1"></i>Simpan Transaksi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-4 mb-5 justify-content-center">
+  <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="0">
+    <div class="card glass-tilt feature-card text-center py-5 glow-card h-100" data-tilt
+      style="background:linear-gradient(135deg,#0a0a0a,var(--surface-3));border-color:rgba(255,255,255,0.15);">
+      <div
+        style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:white;margin-bottom:12px;font-weight:700;">
+        Total Pendapatan Bulan Ini</div>
+      <div style="font-size:3.2rem;font-weight:900;color:var(--text);letter-spacing:-1.5px;line-height:1;">Rp {{
+        "{:,.0f}".format(total_revenue) }}</div>
+      <div class="mt-3" style="font-size:0.85rem;color:white;font-weight:500;">Dari {{ transactions|length }}
+        transaksi</div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="50">
+    <div class="card glass-tilt feature-card text-center py-5 h-100" data-tilt style="background:var(--surface-2);">
+      <div
+        style="font-size:0.75rem;letter-spacing:2px;text-transform:uppercase;color:white;margin-bottom:12px;font-weight:700;">
+        Total Transaksi Bulan Ini</div>
+      <div style="font-size:3.2rem;font-weight:900;color:var(--green);letter-spacing:-1.5px;line-height:1;">{{
+        current_month_count }}</div>
+      <div class="mt-3" style="font-size:0.85rem;color:white;font-weight:500;">Di-reset setiap awal bulan
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Table -->
+<div class="card mb-5 glass-tilt" data-aos="fade-up" data-tilt data-tilt-max="2" data-tilt-glare="false">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-4">
+      <h4 style="font-size:1.25rem;font-weight:800;color:white;letter-spacing:-0.5px;margin:0;">Riwayat Transaksi</h4>
+      <div class="d-flex gap-3 align-items-center flex-wrap">
+        <!-- Filter Form -->
+        <form method="GET" action="{{ url_for('finance') }}" class="d-flex align-items-center gap-2 m-0">
+          <select name="sort" class="form-select" style="background:var(--bg);border:1px solid var(--border-md);color:var(--text);border-radius:12px;padding:8px 12px;font-size:0.9rem;width:auto;">
+            <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Terbaru</option>
+            <option value="oldest" {% if current_sort == 'oldest' %}selected{% endif %}>Terlama</option>
+          </select>
+          <select name="limit" class="form-select" style="background:var(--bg);border:1px solid var(--border-md);color:var(--text);border-radius:12px;padding:8px 12px;font-size:0.9rem;width:auto;">
+            <option value="10" {% if current_limit == '10' %}selected{% endif %}>10 Data</option>
+            <option value="50" {% if current_limit == '50' %}selected{% endif %}>50 Data</option>
+            <option value="100" {% if current_limit == '100' %}selected{% endif %}>100 Data</option>
+            <option value="0" {% if current_limit == '0' %}selected{% endif %}>Semua Data</option>
+          </select>
+          <button type="submit" class="btn" style="background:var(--green);color:#000;font-weight:700;border-radius:12px;font-size:0.9rem;border:none;padding:8px 16px;">
+            Filter
+          </button>
+        </form>
+        <!-- Search Box -->
+        <input type="text" id="searchTx" placeholder="Cari ID/Plat..."
+          style="background:var(--bg);border:1px solid var(--border-md);color:var(--text);border-radius:99px;padding:10px 20px 10px 42px;font-size:0.9rem;outline:none;width:220px;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 fill=%22%23a1a1aa%22 viewBox=%220 0 16 16%22%3E%3Cpath d=%22M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z%22/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:16px center;transition:all var(--transition);">
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0" id="txTable"
+        style="--bs-table-bg: var(--surface-2); --bs-table-color: var(--text);">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>ID Transaksi</th>
+            <th>ID Langganan</th>
+            <th>Kendaraan</th>
+            <th>Tanggal</th>
+            <th>Slot</th>
+            <th>Masuk</th>
+            <th>Keluar</th>
+            <th>Durasi</th>
+            <th>Tarif</th>
+            <th>Total Bayar</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+          <tr>
+            <td style="font-weight:700;color:white;font-size:0.8rem;">{{ loop.index }}</td>
+            <td style="color:white;font-size:0.85rem;">{{ tx.id }}</td>
+            <td style="color:white;font-size:0.85rem;">{{ tx.user_id }}</td>
+            <td style="color:white;font-weight:600;">{{ tx.vehicle_type }}</td>
+            <td style="color:white;">{{ tx.date }}</td>
+            <td><span class="tag-white" style="letter-spacing:1px;">{{ tx.slot_id }}</span></td>
+            <td style="color:white;">{{ tx.check_in }}</td>
+            <td style="color:white;">{{ tx.check_out }}</td>
+            <td style="font-weight:600;">{{ tx.duration_hours }}j</td>
+            <td>
+              {% if tx.vehicle_type == 'Langganan' %}
+              <span class="tag-green">Langganan</span>
+              {% elif tx.is_subscriber %}
+              <span class="tag-green">Gratis (Langganan)</span>
+              {% else %}
+              <span style="color:white;font-size:0.8rem;">Rp {{ "{:,.0f}".format(tx.tariff) }}/j</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if tx.is_subscriber and tx.vehicle_type != 'Langganan' %}
+              <span style="color:white;font-weight:600;">GRATIS</span>
+              {% else %}
+              <span style="font-weight:800;color:var(--green);font-size:1.05rem;">Rp {{ "{:,.0f}".format(tx.fee) }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <form action="{{ url_for('finance_delete', tx_id=tx.id) }}" method="POST" onsubmit="return confirm('Hapus transaksi ini permanen?')">
+                <button type="submit" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 6px; font-weight: bold; padding: 2px 8px;">Hapus</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="12" class="text-center py-5" style="color:white;font-weight:500;">Belum ada transaksi yang
+              tercatat.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Monthly -->
+<div class="card glass-tilt" data-aos="fade-up" data-tilt data-tilt-max="2" data-tilt-glare="false">
+  <div class="card-body p-4 p-md-5">
+    <h4 style="font-size:1.25rem;font-weight:800;color:white;letter-spacing:-0.5px;margin-bottom:1.5rem;">Rekapitulasi
+      Bulanan</h4>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0"
+        style="--bs-table-bg: var(--surface-2); --bs-table-color: var(--text);">
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th>Tahun</th>
+            <th>Total Trans.</th>
+            <th>Pendapatan Bersih</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for month in monthly_summary %}
+          <tr>
+            <td style="font-weight:600;color:var(--text);">{{ month.month }}</td>
+            <td style="color:white;">{{ month.year }}</td>
+            <td style="color:white;">{{ month.count }}</td>
+            <td style="font-weight:800;color:var(--green);font-size:1.1rem;">Rp {{ "{:,.0f}".format(month.total) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="4" class="text-center py-4" style="color:white;">Data bulanan kosong.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="financeData" data-tariff="{{ tariff }}" style="display:none;"></div>
+
+<script>
+  // Search
+  document.getElementById('searchTx').addEventListener('keyup', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#txTable tbody tr').forEach(r => {
+      r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // Fee preview (live update)
+  const TARIFF = parseInt(document.getElementById('financeData').dataset.tariff);
+  const durInput = document.getElementById('durationInput');
+  const feePreview = document.getElementById('feePreview');
+
+  function updatePreview() {
+    const tariffText = document.getElementById('tariffText');
+    const hrs = parseInt(durInput.value) || 0;
+    const type = document.querySelector('select[name="vehicle_type"]').value;
+    const rate = type === 'Besar' ? 3000 : 2000;
+    const total = 5000 + Math.max(0, hrs) * rate;
+    
+    feePreview.textContent = 'Rp ' + total.toLocaleString('id-ID');
+    feePreview.style.color = 'var(--green)';
+    tariffText.textContent = `Dasar: Rp 5.000 + Rp ${rate.toLocaleString('id-ID')}/jam berikutnya`;
+  }
+  durInput.addEventListener('input', updatePreview);
+  document.querySelector('select[name="vehicle_type"]').addEventListener('change', updatePreview);
+
+  // Set default date to today
+  document.querySelector('#addTxModal input[name="date"]').value = new Date().toISOString().split('T')[0];
+
+  // Move modals to body to fix unclickable inputs issue
+  document.querySelectorAll('.modal').forEach(modal => {
+    document.body.appendChild(modal);
+  });
+</script>
+{% endblock %}

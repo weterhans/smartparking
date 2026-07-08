@@ -1,0 +1,563 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  /* ── Slot Grid ─────────────────────────────────── */
+  .parking-layout {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto 60px auto;
+    gap: 16px;
+    padding: 1.5rem;
+    background: #0a0f14;
+    border-radius: 16px;
+    border: 1px solid #1e2d3d;
+  }
+
+  .driveway-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 2px dashed rgba(255, 255, 255, 0.25);
+    border-bottom: 2px dashed rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.7rem;
+    font-weight: 900;
+    letter-spacing: 12px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+  }
+
+  .slot-card {
+    border-radius: 14px;
+    border: 2px solid #333;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    background: #141920;
+    cursor: default;
+    position: relative;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* NO opacity animation - let cards be fully visible at all times */
+    opacity: 1 !important;
+  }
+
+  .slot-card:hover {
+    transform: translateY(-3px);
+  }
+
+  /* ── AVAILABLE: Green ── */
+  .slot-available {
+    background: #071a10 !important;
+    border-color: #16a34a !important;
+    box-shadow: 0 0 24px rgba(22, 163, 74, 0.5) !important;
+  }
+
+  .slot-available .slot-name {
+    color: #4ade80 !important;
+  }
+
+  .slot-available .slot-status-badge {
+    background: #14532d;
+    color: #4ade80;
+    border: 1px solid #16a34a;
+  }
+
+  .slot-available .slot-icon-el {
+    color: #22c55e !important;
+  }
+
+  /* ── OCCUPIED: Purple ── */
+  .slot-occupied {
+    background: #130f1f !important;
+    border-color: #7c3aed !important;
+    box-shadow: 0 0 24px rgba(124, 58, 237, 0.5) !important;
+  }
+
+  .slot-occupied .slot-name {
+    color: #c4b5fd !important;
+  }
+
+  .slot-occupied .slot-status-badge {
+    background: #2e1065;
+    color: #c4b5fd;
+    border: 1px solid #7c3aed;
+  }
+
+  .slot-occupied .slot-icon-el {
+    color: #a78bfa !important;
+  }
+
+  /* ── MAINTENANCE: Red ── */
+  .slot-maintenance {
+    background: #1c0404 !important;
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 24px rgba(220, 38, 38, 0.55) !important;
+  }
+
+  .slot-maintenance .slot-name {
+    color: #fca5a5 !important;
+  }
+
+  .slot-maintenance .slot-status-badge {
+    background: #450a0a;
+    color: #fca5a5;
+    border: 1px solid #dc2626;
+  }
+
+  .slot-maintenance .slot-icon-el {
+    color: #ef4444 !important;
+  }
+
+  /* ── RESERVED (Subscriber): Cyan/Teal ── */
+  .slot-reserved {
+    background: #061a1f !important;
+    border-color: #06b6d4 !important;
+    box-shadow: 0 0 24px rgba(6, 182, 212, 0.45) !important;
+  }
+
+  .slot-reserved .slot-name {
+    color: #67e8f9 !important;
+  }
+
+  .slot-reserved .slot-status-badge {
+    background: #083344;
+    color: #67e8f9;
+    border: 1px solid #06b6d4;
+  }
+
+  .slot-reserved .slot-icon-el {
+    color: #22d3ee !important;
+  }
+
+  /* ── Components ── */
+  .slot-icon-el {
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+
+  .slot-name {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+    color: #fff;
+  }
+
+  .slot-status-badge {
+    display: inline-block;
+    border-radius: 99px;
+    padding: 3px 14px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .slot-detail-box {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px;
+    color: #ccc;
+  }
+
+  .slot-detail-box .lbl {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.75rem;
+  }
+
+  .slot-detail-box .val {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .btn-checkout {
+    width: 100%;
+    border: none;
+    border-radius: 99px;
+    padding: 7px 0;
+    font-weight: 800;
+    font-size: 0.85rem;
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .btn-checkout:hover {
+    opacity: 0.85;
+  }
+
+  .maint-badge,
+  .sub-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .maint-badge {
+    background: #dc2626;
+  }
+
+  .sub-badge {
+    background: #0891b2;
+  }
+</style>
+
+<!-- Hero -->
+<div class="mb-5 text-center mt-3" data-aos="fade-down">
+  <div
+    style="display:inline-flex;align-items:center;padding:6px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);border-radius:99px;font-size:0.75rem;font-weight:600;letter-spacing:1px;color:var(--text-secondary);margin-bottom:1rem;">
+    <span class="pulse-dot me-2"></span>MONITORING SYSTEM
+  </div>
+  <h1 class="page-title" style="font-size:3rem;font-weight:900;letter-spacing:-2px;margin-bottom:1rem;">Parking
+    Monitoring</h1>
+  <p style="font-size:1.05rem;color:var(--text-muted);max-width:600px;margin:0 auto;line-height:1.6;">Kondisi slot
+    parkir real-time.</p>
+  <button class="btn px-4 py-2 mt-3" data-bs-toggle="modal" data-bs-target="#simModal"
+    style="background:var(--surface-3);color:white;border:1px solid var(--border-md);border-radius:99px;font-size:0.9rem;">
+    <i class="bi bi-play-circle me-2"></i>Mode Simulasi Manual
+  </button>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat, msg in messages %}
+<div class="alert alert-{{ cat }} alert-dismissible fade show mb-4 small"
+  style="max-width: 600px; margin: 0 auto 2rem auto;">
+  {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"
+    style="filter:invert(1) opacity(0.5);"></button>
+</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<!-- Summary -->
+{% set total = slots|length %}
+<div class="row g-4 mb-5 justify-content-center">
+  <div class="col-md-3 col-sm-6" data-aos="fade-up">
+    <div class="card glass-tilt feature-card h-100 text-center py-4" data-tilt
+      style="background:rgba(34,197,94,0.05);border-color:rgba(34,197,94,0.3);">
+      <div
+        style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:#4ade80;margin-bottom:8px;font-weight:700;">
+        Tersedia</div>
+      <div style="font-size:3rem;font-weight:900;color:#22c55e;letter-spacing:-1px;line-height:1;">{{ count_available }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="50">
+    <div class="card glass-tilt feature-card h-100 text-center py-4" data-tilt
+      style="background:rgba(124,58,237,0.05);border-color:rgba(124,58,237,0.3);">
+      <div
+        style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;margin-bottom:8px;font-weight:700;">
+        Terisi</div>
+      <div style="font-size:3rem;font-weight:900;color:#c4b5fd;letter-spacing:-1px;line-height:1;">{{ count_occupied }}
+      </div>
+
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="100">
+    <div class="card glass-tilt feature-card h-100 text-center py-4" data-tilt
+      style="background:rgba(220,38,38,0.05);border-color:rgba(220,38,38,0.3);">
+      <div
+        style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:#f87171;margin-bottom:8px;font-weight:700;">
+        Maintenance</div>
+      <div style="font-size:3rem;font-weight:900;color:#ef4444;letter-spacing:-1px;line-height:1;">{{ count_maintenance
+        }}</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-12" data-aos="fade-up" data-aos-delay="150">
+    <div class="card glass-tilt feature-card h-100 text-center py-4" data-tilt>
+      <div
+        style="font-size:0.75rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;font-weight:700;">
+        Total Slot</div>
+      <div style="font-size:3rem;font-weight:900;color:#fff;letter-spacing:-1px;line-height:1;">{{ total }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Grid Card -->
+<div class="card" data-aos="fade-up">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <h4 style="font-size:1.15rem;font-weight:800;color:white;margin:0;">Layout Grid Area</h4>
+      <div class="d-flex gap-3 align-items-center" style="font-size:0.8rem;font-weight:700;">
+        <span style="color:#4ade80;"><i class="bi bi-circle-fill me-1"></i>Tersedia</span>
+        <span style="color:#a78bfa;"><i class="bi bi-circle-fill me-1"></i>Terisi</span>
+        <span style="color:#22d3ee;"><i class="bi bi-circle-fill me-1"></i>Reserved</span>
+        <span style="color:#f87171;"><i class="bi bi-circle-fill me-1"></i>Maintenance</span>
+      </div>
+    </div>
+
+    {% if slots %}
+    {% macro render_slot(s) %}
+    {% if s %}
+    {% set avail = s.status == 'available' %}
+    {% set maint = s.get('usage_count', 0) >= 70 or s.status == 'maintenance' %}
+    {% set reserved = s.get('is_subscriber', false) %}
+
+    {# Determine card class: reserved takes priority over available #}
+    {% if maint %}
+    {% set card_class = 'slot-maintenance' %}
+    {% elif reserved %}
+    {% set card_class = 'slot-reserved' %}
+    {% elif avail %}
+    {% set card_class = 'slot-available' %}
+    {% else %}
+    {% set card_class = 'slot-occupied' %}
+    {% endif %}
+
+    <div class="slot-card {{ card_class }}">
+      {% if maint %}<div class="maint-badge">⚠ MAINTENANCE</div>{% endif %}
+      {% if reserved and not maint %}<div class="sub-badge">🔒 SUBSCRIBER</div>{% endif %}
+
+      <div class="slot-icon-el">
+        {% if reserved and avail and not maint %}
+        <i class="bi bi-shield-lock-fill"></i>
+        {% elif avail %}
+        <i class="bi bi-p-square-fill"></i>
+        {% elif maint %}
+        <i class="bi bi-tools"></i>
+        {% else %}
+        <i class="bi bi-car-front-fill"></i>
+        {% endif %}
+      </div>
+
+      <div class="slot-name">{{ s.id }}</div>
+
+      <div class="slot-status-badge">
+        {% if maint %}⚠ Maintenance
+        {% elif reserved and avail %}🔒 Reserved
+        {% elif avail %}✓ Tersedia
+        {% else %}● Terisi{% endif %}
+      </div>
+
+      {# Subscriber info box #}
+      {% if reserved %}
+      <div class="slot-detail-box mt-auto">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="lbl">Subscriber</span>
+          <span class="val">{{ s.get('subscriber_name', '-') }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span class="lbl">Card UID</span>
+          <span class="val" style="font-size:0.78rem;font-family:monospace;">{{ s.get('subscriber_card', '-') }}</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="lbl">Berlaku s/d</span>
+          <span class="val" style="font-size:0.78rem;">{{ s.get('subscriber_expiry', '-') }}</span>
+        </div>
+      </div>
+      {% endif %}
+
+      {# Non-subscriber occupied slot info #}
+      {% if not avail and not reserved and not maint %}
+      <div class="slot-detail-box mt-auto">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="lbl">Tipe Kendaraan</span>
+          <span class="val" style="color:#a78bfa;">{{ s.get('vehicle_type', 'Kecil') }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-1">
+          <span class="lbl">Masuk</span>
+          <span class="val checkin-time" data-time="{{ s.get('check_in','') }}">
+            {% if s.get('check_in') %}
+            {{ s.check_in.split('T')[1][:5] if 'T' in s.check_in else s.check_in }}
+            {% else %}-{% endif %}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="lbl">Durasi</span>
+          <span class="val duration-display">–</span>
+        </div>
+      </div>
+      <!-- Form Checkout Web ke Hardware (Simulasi) -->
+      <div class="mt-auto w-100">
+        <form action="{{ url_for('simulate_checkout_web', slot_id=s.id) }}" method="POST">
+          <select name="vehicle_type" class="form-select form-select-sm mb-2"
+            style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.75rem;">
+            <option value="Kecil" {{ 'selected' if s.get('vehicle_type') !='Besar' }}>Mobil Kecil (Rp 2k/jam)</option>
+            <option value="Besar" {{ 'selected' if s.get('vehicle_type')=='Besar' }}>Mobil Besar (Rp 3k/jam)</option>
+          </select>
+          <button type="submit" class="btn-checkout">Checkout </button>
+        </form>
+      </div>
+      {% endif %}
+
+      {# Maintenance info #}
+      {% if maint %}
+      <div class="mt-auto w-100">
+        <form action="{{ url_for('maintenance_done', slot_id=s.id) }}" method="POST"
+          onsubmit="return confirm('Tandai maintenance selesai?');">
+          <button type="submit" class="btn-checkout"
+            style="background: linear-gradient(90deg, #dc2626, #991b1b); box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);">Selesai
+            Maintenance</button>
+        </form>
+      </div>
+      {% endif %}
+
+    </div>
+    {% else %}
+    <div></div>
+    {% endif %}
+    {% endmacro %}
+
+    <div class="parking-layout">
+      {# TOP ROW: A4, A5, A6 #}
+      {% set s4 = slots[3] if slots|length > 3 else None %}
+      {% set s5 = slots[4] if slots|length > 4 else None %}
+      {% set s6 = slots[5] if slots|length > 5 else None %}
+      {{ render_slot(s4) }}
+      {{ render_slot(s5) }}
+      {{ render_slot(s6) }}
+
+      {# DRIVEWAY #}
+      <div class="driveway-row">D R I V E W A Y</div>
+
+      {# BOTTOM ROW: A3, A2, A1 #}
+      {% set s1 = slots[0] if slots|length > 0 else None %}
+      {% set s2 = slots[1] if slots|length > 1 else None %}
+      {% set s3 = slots[2] if slots|length > 2 else None %}
+      {{ render_slot(s3) }}
+      {{ render_slot(s2) }}
+      {{ render_slot(s1) }}
+    </div>
+
+    {% else %}
+    <div class="text-center py-5" style="color:var(--text-muted);">
+      <i class="bi bi-cloud-slash" style="font-size:3rem;opacity:0.2;display:block;margin-bottom:1rem;"></i>
+      <p style="font-weight:600;">Tidak ada data slot.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal Simulasi -->
+<div class="modal fade" id="simModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content"
+      style="background:var(--surface-2);border:1px solid var(--border-md);border-radius:20px;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" style="font-weight:800;color:white;"><i class="bi bi-car-front me-2"></i>Simulasi
+          Kendaraan Masuk</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Pilih Slot Tersedia</label>
+        <select id="simSlotSelect" class="form-select"
+          style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;margin-bottom:15px;">
+          {% for s in slots %}
+          {% if s.status == 'available' and not (s.get('usage_count', 0) >= 70) %}
+          <option value="{{ s.id }}">Slot {{ s.id }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+
+        <label class="form-label small" style="color:rgba(255,255,255,0.7);font-weight:600;">Pilih Tipe
+          Kendaraan</label>
+        <select id="simVehicleType" class="form-select"
+          style="background:var(--bg);border:1px solid var(--border-md);color:white;border-radius:12px;padding:10px 14px;">
+          <option value="Kecil">Mobil Kecil</option>
+          <option value="Besar">Mobil Besar</option>
+        </select>
+
+        <div class="form-text mt-2" style="color:rgba(255,255,255,0.5);font-size:0.8rem;">
+          Fitur ini hanya untuk keperluan demo. Sistem nyata akan beroperasi secara otomatis melalui Modul Hardware (IR
+          Sensor/Ultrasonic/ESP32).
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal"
+          style="color:white;border-color:rgba(255,255,255,0.2);">Batal</button>
+        <button type="button" class="btn rounded-pill px-4" style="background:#16a34a;color:white;font-weight:700;"
+          onclick="submitSimulation()">
+          Simulasikan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function submitSimulation() {
+    const slotId = document.getElementById('simSlotSelect').value;
+    const vehicleType = document.getElementById('simVehicleType').value;
+    if (!slotId) return alert('Tidak ada slot kosong yang tersedia.');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/simulate_checkin/' + slotId;
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'vehicle_type';
+    input.value = vehicleType;
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+  function updateDurations() {
+    const now = new Date();
+    document.querySelectorAll('.checkin-time').forEach(el => {
+      const timeStr = el.getAttribute('data-time');
+      if (!timeStr) return;
+      const durationEl = el.closest('.slot-detail-box').querySelector('.duration-display');
+      if (!durationEl) return;
+      try {
+        let t = new Date(timeStr);
+        if (isNaN(t.getTime()) && timeStr.includes(':')) {
+          const [h, m] = timeStr.split(':');
+          t = new Date(); t.setHours(+h, +m, 0, 0);
+        }
+        if (!isNaN(t.getTime())) {
+          const diff = now - t;
+          if (diff >= 0) {
+            const hrs = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            durationEl.textContent = `${hrs}j ${mins}m`;
+          }
+        }
+      } catch (e) { }
+    });
+  }
+  updateDurations();
+  setInterval(updateDurations, 30000);
+
+  // Polling pintar: Cek perubahan status secara background (AJAX)
+  // Hanya me-refresh halaman JIKA ada perubahan slot, sehingga user tidak terganggu.
+  let lastStatusData = "";
+  setInterval(async function() {
+    try {
+      const response = await fetch('/test_slots');
+      if (response.ok) {
+        const data = await response.text(); // Format: JSON string
+        if (lastStatusData === "") {
+          lastStatusData = data; // Set initial data saat pertama load
+        } else if (lastStatusData !== data) {
+          // Ada perbedaan data dengan database (ada mobil masuk/keluar)
+          window.location.reload(); 
+        }
+      }
+    } catch (e) {
+      console.log("Gagal mengecek status", e);
+    }
+  }, 2500); // Cek setiap 2.5 detik
+
+  // Move modal to body to prevent z-index issues
+  document.querySelectorAll('.modal').forEach(modal => {
+    document.body.appendChild(modal);
+  });
+</script>
+{% endblock %}

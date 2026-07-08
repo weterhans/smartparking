@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Smart Parking</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><path fill=%22%2322c55e%22 d=%22M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z%22/><path fill=%22%2322c55e%22 d=%22M5.5 4.002h2.962C10.045 4.002 11 5.104 11 6.586c0 1.494-.967 2.578-2.55 2.578H6.784V12H5.5V4.002zm2.77 4.072c.893 0 1.419-.545 1.419-1.488s-.526-1.482-1.42-1.482H6.778v2.97H8.27z%22/></svg>">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-icons.min.css') }}" />
+  <!-- AOS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/aos.css') }}" />
+  <!-- App CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% block extra_head %}{% endblock %}
+
+  <style>
+    /* Dark Mode Dropdown for Bootstrap */
+    .dropdown-menu {
+      background: var(--surface-2);
+      border: 1px solid var(--border-md);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: var(--shadow);
+    }
+
+    .dropdown-item {
+      color: var(--text-secondary);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      transition: all var(--transition);
+    }
+
+    .dropdown-item:hover {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    .dropdown-divider {
+      border-color: var(--border);
+    }
+  </style>
+</head>
+
+<body class="{% block body_class %}{% endblock %}">
+
+  <!-- Interactive Particles Background -->
+  <div id="particles-js" aria-hidden="true"></div>
+
+  <!-- Animated background orbs (hidden on auth-page via CSS) -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="bg-orb bg-orb--1"></div>
+    <div class="bg-orb bg-orb--2"></div>
+    <div class="bg-orb bg-orb--3"></div>
+  </div>
+
+  <nav class="top-navbar">
+    <div class="nav-container">
+
+      <!-- Left: Brand -->
+      <a href="{{ url_for('index') }}" class="nav-brand">
+        <div class="nav-brand-icon">
+          <i class="bi bi-p-square-fill"></i>
+        </div>
+        <div class="nav-brand-name">Smart<span>Parking</span></div>
+      </a>
+
+      <!-- Center: Links (Desktop) -->
+      <div class="nav-links">
+        <a href="{{ url_for('index') }}"
+          class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('monitoring') }}"
+          class="nav-link {% if request.endpoint == 'monitoring' %}active{% endif %}">Monitoring</a>
+        <a href="{{ url_for('finance') }}"
+          class="nav-link {% if request.endpoint == 'finance' %}active{% endif %}">Finance</a>
+        <a href="{{ url_for('subscription') }}"
+          class="nav-link {% if request.endpoint == 'subscription' %}active{% endif %}">Subscription</a>
+        <a href="{{ url_for('prediction') }}"
+          class="nav-link {% if request.endpoint == 'prediction' %}active{% endif %}">Prediction</a>
+        <a href="{{ url_for('monitoring_gate') }}"
+          class="nav-link {% if request.endpoint == 'monitoring_gate' %}active{% endif %}">Monitoring Gate</a>
+      </div>
+
+      <!-- Right: User / Auth -->
+      <div class="nav-user">
+        {% if current_user and current_user.is_authenticated %}
+        <div class="dropdown">
+          <div class="nav-user-profile" role="button" data-bs-toggle="dropdown">
+            <div class="nav-avatar">
+              {{ current_user.nama[0]|upper if current_user.nama else current_user.username[0]|upper }}
+            </div>
+            <i class="bi bi-chevron-down" style="font-size:0.7rem;color:var(--text-muted);"></i>
+          </div>
+          <ul class="dropdown-menu dropdown-menu-end mt-2">
+            <li class="px-3 py-2">
+              <div style="font-size:0.85rem;font-weight:700;color:var(--text);">{{ current_user.nama or
+                current_user.username }}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">@{{ current_user.username }}</div>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person me-2"></i>My Profile</a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item" href="{{ url_for('logout') }}" style="color:var(--red);"><i
+                  class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
+          </ul>
+        </div>
+        {% else %}
+        {% if request.endpoint != 'login' and request.endpoint != 'auth.register' %}
+        <a href="{{ url_for('login') }}" class="btn-login-nav">Sign In</a>
+        {% endif %}
+        {% endif %}
+
+        <!-- Mobile Toggle Button -->
+        <button class="mobile-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:2px;font-weight:700;">Navigation</div>
+      <i class="bi bi-x-lg" style="font-size:1.5rem;color:var(--text);cursor:pointer;" onclick="toggleMobileMenu()"></i>
+    </div>
+    <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">Dashboard</a>
+    <a href="{{ url_for('monitoring') }}" class="{% if request.endpoint == 'monitoring' %}active{% endif %}">Monitoring</a>
+    <a href="{{ url_for('finance') }}" class="{% if request.endpoint == 'finance' %}active{% endif %}">Finance</a>
+    <a href="{{ url_for('subscription') }}" class="{% if request.endpoint == 'subscription' %}active{% endif %}">Subscription</a>
+    <a href="{{ url_for('prediction') }}" class="{% if request.endpoint == 'prediction' %}active{% endif %}">Prediction</a>
+    <a href="{{ url_for('monitoring_gate') }}" class="{% if request.endpoint == 'monitoring_gate' %}active{% endif %}">Monitoring Gate</a>
+  </div>
+
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer_block %}
+  <footer
+    style="text-align:center;padding:2rem 0;color:var(--text-muted);font-size:0.8rem;border-top:1px solid var(--border);">
+    <div class="container">
+      <p class="mb-0">© 2026 Smart Parking System.
+      </p>
+    </div>
+  </footer>
+  {% endblock %}
+
+  <!-- ── SCRIPTS ─────────────────────────────────────────── -->
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/aos.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/gsap.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/vanilla-tilt.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/particles.min.js') }}"></script>
+
+  <script>
+    AOS.init({ duration: 600, easing: 'ease-out-cubic', once: true });
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      menu.classList.toggle('active');
+      document.body.style.overflow = menu.classList.contains('active') ? 'hidden' : '';
+    }
+
+    // Initialize VanillaTilt only on non-touch devices
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (typeof VanillaTilt !== 'undefined' && !isTouch) {
+      VanillaTilt.init(document.querySelectorAll("[data-tilt]"), {
+        max: 5,
+        speed: 400,
+        glare: true,
+        "max-glare": 0.15,
+        scale: 1.02
+      });
+    }
+
+    // Initialize Particles.js (fewer particles on mobile)
+    if (typeof particlesJS !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
+      particlesJS("particles-js", {
+        "particles": {
+          "number": { "value": isMobile ? 20 : 60, "density": { "enable": true, "value_area": 800 } },
+          "color": { "value": "#22c55e" },
+          "shape": { "type": "circle" },
+          "opacity": { "value": 0.3, "random": false, "anim": { "enable": !isMobile, "speed": 1, "opacity_min": 0.1, "sync": false } },
+          "size": { "value": 3, "random": true, "anim": { "enable": !isMobile, "speed": 2, "size_min": 0.1, "sync": false } },
+          "line_linked": { "enable": !isMobile, "distance": 150, "color": "#22c55e", "opacity": 0.2, "width": 1 },
+          "move": { "enable": true, "speed": isMobile ? 0.5 : 1.5, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false, "attract": { "enable": false, "rotateX": 600, "rotateY": 1200 } }
+        },
+        "interactivity": {
+          "detect_on": "window",
+          "events": { "onhover": { "enable": !isMobile, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" }, "resize": true },
+          "modes": {
+            "grab": { "distance": 200, "line_linked": { "opacity": 0.6 } },
+            "bubble": { "distance": 400, "size": 40, "duration": 2, "opacity": 8, "speed": 3 },
+            "repulse": { "distance": 200, "duration": 0.4 },
+            "push": { "particles_nb": 4 },
+            "remove": { "particles_nb": 2 }
+          }
+        },
+        "retina_detect": true
+      });
+    }
+  </script>
+</body>
+
+</html>
