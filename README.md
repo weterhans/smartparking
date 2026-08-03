@@ -11,37 +11,19 @@ Repository ini dibagi menjadi **3 bagian utama** yang dikerjakan oleh anggota ti
 | Folder | Deskripsi | Penanggung Jawab |
 |---|---|---|
 | [`Website/`](./Website/) | Backend Flask, Dashboard Web, Prediksi Regresi Linear | Joko Febrianto |
-| [`Klasifikasi/`](./Klasifikasi/) | Model Machine Learning untuk klasifikasi status slot parkir | *(Teman 1)* |
-| [`Monitoring_Slot/`](./Monitoring_Slot/) | Kode ESP32 & sensor untuk monitoring slot parkir | *(Teman 2)* |
+| [`Klasifikasi/`](./Klasifikasi/) | Model Machine Learning untuk klasifikasi status slot parkir | Fariz Hadi Pamungkas |
+| [`Monitoring_Slot/`](./Monitoring_Slot/) | Kode ESP32 & sensor untuk monitoring slot parkir | Muhamad Ikhsan |
 
 > Lihat `README.md` di dalam masing-masing folder untuk panduan setup dan menjalankan bagian tersebut.
 
 ---
-
-## 🛠️ Gambaran Sistem
-
-```
-[Sensor HC-SR04]──►[ESP32 Slave]──►(ESP-NOW)──►[ESP32 Master]──►[Raspberry Pi]
-                                                      │                │
-                                               [RFID Reader]    [Flask Server]
-                                               [Motor Servo]    [MySQL Database]
-                                                                      │
-                                                              [Web Dashboard]
-```
-
-- **ESP32 Slave** → Membaca sensor HC-SR04 dan mengirim data via ESP-NOW
-- **ESP32 Master** → Menerima data, mengelola RFID & palang pintu (Servo), mengirim ke Raspberry Pi via Serial USB
-- **Raspberry Pi / Server** → Menjalankan backend Flask, menyimpan data ke MySQL, menyajikan dashboard web
-
----
-
 ## 👥 Tim Pengembang
 
 | Nama | Bagian |
 |---|---|
 | Joko Febrianto | Website / Backend Flask |
-| *(Teman 1)* | Klasifikasi |
-| *(Teman 2)* | Monitoring Slot |
+| Fariz Hadi Pamungkas | Klasifikasi |
+| Muhamad Ikhsan | Monitoring Slot |
 
 ---
 
