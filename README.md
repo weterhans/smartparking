@@ -11,7 +11,7 @@ Repository ini dibagi menjadi **3 bagian utama** yang dikerjakan oleh anggota ti
 | Folder | Deskripsi | Penanggung Jawab |
 |---|---|---|
 | [`Website/`](./Website/) | Backend Flask, Dashboard Web, Prediksi Regresi Linear | Joko Febrianto |
-| [`Klasifikasi/`](./Klasifikasi/) | Model Machine Learning untuk klasifikasi status slot parkir | Fariz Hadi Pamungkas |
+| [`Klasifikasi/`](./Klasifikasi/) | Model Machine Learning untuk klasifikasi Jenis Kendaraan | Fariz Hadi Pamungkas |
 | [`Monitoring_Slot/`](./Monitoring_Slot/) | Kode ESP32 & sensor untuk monitoring slot parkir | Muhamad Ikhsan |
 
 > Lihat `README.md` di dalam masing-masing folder untuk panduan setup dan menjalankan bagian tersebut.
