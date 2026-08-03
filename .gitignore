@@ -10,12 +10,19 @@ __pycache__/
 .vscode/
 .claude/
 .idea/
+.hintrc
 
-# Dokumen Skripsi (Sangat besar dan berisiko jika di-push ke publik)
+# Dokumen Skripsi & Data (Sangat besar dan berisiko jika di-push ke publik)
 *.docx
 *.doc
 *.pdf
 ~$*.docx
+*.xlsx
+*.xls
+
+# File Gambar QR Code (generated, tidak perlu di-push)
+QR_Code_GitHub_Skripsi.png
+qrcode_smartparking.png
 
 # File Teks Sementara (kecuali requirements.txt)
 *.txt
