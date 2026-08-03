@@ -1,6 +1,6 @@
 # 🚗 Smart Parking System
 
-Sistem *Smart Parking* berbasis *Internet of Things* (IoT) terintegrasi yang dirancang menggunakan mikrokontroler ESP32 (Protokol Komunikasi ESP-NOW) dan Raspberry Pi sebagai *server* pusat. Sistem ini dilengkapi dengan algoritma Kecerdasan Buatan untuk klasifikasi dan prediksi kepadatan kendaraan.
+Sistem *Smart Parking* berbasis *WSN terintegrasi yang dirancang menggunakan mikrokontroler ESP32 (Protokol Komunikasi ESP-NOW) dan Raspberry Pi sebagai *server* pusat. Sistem ini dilengkapi dengan algoritma Kecerdasan Buatan untuk klasifikasi dan prediksi kepadatan kendaraan.
 
 ---
 
