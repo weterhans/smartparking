@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualisasi 8 Fitur KNN — Edge AI Vehicle Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#0a0d1a;color:#dde6ff;min-height:100vh}
+
+.hero{background:linear-gradient(135deg,#0d1117,#111827,#0d1117);border-bottom:1px solid #1e293b;padding:24px 32px 18px;text-align:center}
+.hero h1{font-size:1.65rem;font-weight:800;background:linear-gradient(135deg,#60a5fa,#a78bfa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:5px}
+.hero p{color:#64748b;font-size:.85rem}
+
+/* Vehicle selector */
+.selector-bar{display:flex;justify-content:center;gap:10px;padding:16px 24px;background:#0d1117;border-bottom:1px solid #1e293b;flex-wrap:wrap}
+.veh-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 18px;border:2px solid #1e293b;border-radius:10px;background:#111827;cursor:pointer;transition:all .2s;min-width:88px}
+.veh-btn:hover{border-color:#3b82f6;background:#172033}
+.veh-btn.active{border-color:#6366f1;background:#1a1f3a;box-shadow:0 0 14px rgba(99,102,241,.3)}
+.veh-btn .icon{font-size:1.5rem}
+.veh-btn .name{font-size:.72rem;font-weight:600;color:#94a3b8}
+.veh-btn.active .name{color:#a5b4fc}
+
+/* Tabs */
+.tabs{display:flex;gap:0;background:#0d1117;border-bottom:1px solid #1e293b;overflow-x:auto}
+.tab-btn{padding:10px 20px;font-size:.8rem;font-weight:600;color:#64748b;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab-btn:hover{color:#94a3b8}
+.tab-btn.active{color:#a5b4fc;border-bottom-color:#6366f1}
+
+/* Content area */
+.content{padding:20px 24px;max-width:1200px;margin:0 auto}
+
+/* Grid layout */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px}
+.full{grid-column:1/-1}
+
+/* Cards */
+.card{background:#111827;border:1px solid #1e293b;border-radius:14px;padding:18px 20px}
+.card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:#64748b}
+.cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+canvas{width:100%;display:block;border-radius:6px}
+
+/* Slider controls */
+.ctrl-row{display:grid;gap:12px;margin-bottom:16px}
+.ctrl-row.c2{grid-template-columns:1fr 1fr}
+.ctrl-row.c3{grid-template-columns:1fr 1fr 1fr}
+.ctrl-group label{display:block;font-size:.73rem;color:#94a3b8;margin-bottom:4px;font-weight:500}
+.ctrl-group .val{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:#60a5fa;margin-bottom:4px}
+input[type=range]{width:100%;accent-color:#6366f1;cursor:pointer}
+
+/* Badges */
+.badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.badge{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:9px 14px;text-align:center;flex:1;min-width:90px}
+.badge .bl{font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.badge .bv{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:700}
+
+/* Formula */
+.formula-box{background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;margin-top:12px}
+.frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:.95rem;line-height:2}
+.fb{color:#60a5fa;font-weight:700}.fv{color:#a78bfa;font-weight:700}.fg{color:#34d399;font-weight:700}.fa{color:#fbbf24;font-weight:700}.fw{color:#f1f5f9}
+
+/* Legend */
+.leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.leg-i{display:flex;align-items:center;gap:6px;font-size:.75rem;color:#94a3b8}
+.leg-b{width:18px;height:12px;border-radius:3px}
+
+/* Insight box */
+.insight{margin-top:10px;padding:10px 14px;border-radius:8px;font-size:.78rem;line-height:1.6;border-left:3px solid}
+
+/* Siluet panel */
+.sil-wrap{position:relative}
+#cvMain{border:1px solid #1e293b;background:#080b12;cursor:crosshair}
+.bin-tip{margin-top:8px;background:#0f172a;border:1px solid #1e293b;border-radius:6px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:#64748b;min-height:32px}
+.bin-tip span{color:#60a5fa}
+
+/* Feature tab content */
+.feat-tab{display:none}.feat-tab.active{display:block}
+
+/* Comparison bar chart */
+.cmp-bar{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.cmp-label{font-size:.73rem;color:#94a3b8;width:70px;flex-shrink:0;text-align:right}
+.cmp-bar-bg{flex:1;height:22px;background:#1e293b;border-radius:4px;overflow:hidden;position:relative}
+.cmp-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:.7rem;font-weight:700;color:#fff;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.cmp-val{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:#94a3b8;width:60px}
+
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}.ctrl-row.c2,.ctrl-row.c3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🔬 Visualisasi Interaktif 8 Fitur KNN — Edge AI Vehicle Classifier</h1>
+  <p>Pilih kendaraan → Pilih fitur → Lihat grafik matematika & fisika yang digunakan sistem untuk mengklasifikasi</p>
+</div>
+
+<div class="selector-bar">
+  <button class="veh-btn" data-v="citycar" onclick="setVeh(this)"><span class="icon">🚗</span><span class="name">City Car</span></button>
+  <button class="veh-btn" data-v="sedan"   onclick="setVeh(this)"><span class="icon">🚙</span><span class="name">Sedan</span></button>
+  <button class="veh-btn active" data-v="mpv" onclick="setVeh(this)"><span class="icon">🚐</span><span class="name">MPV</span></button>
+  <button class="veh-btn" data-v="suv"     onclick="setVeh(this)"><span class="icon">🛻</span><span class="name">SUV</span></button>
+  <button class="veh-btn" data-v="pickup"  onclick="setVeh(this)"><span class="icon">🚚</span><span class="name">Pickup</span></button>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="setTab(this,'siluet')">📡 Siluet Sensor</button>
+  <button class="tab-btn" onclick="setTab(this,'f1')">f₁ Panjang</button>
+  <button class="tab-btn" onclick="setTab(this,'f2')">f₂ Tinggi</button>
+  <button class="tab-btn" onclick="setTab(this,'f3')">f₃ Std Dev</button>
+  <button class="tab-btn" onclick="setTab(this,'f4')">f₄ PosMax</button>
+  <button class="tab-btn" onclick="setTab(this,'f5')">f₅ Slope</button>
+  <button class="tab-btn" onclick="setTab(this,'f6')">f₆ Compactness</button>
+  <button class="tab-btn" onclick="setTab(this,'f7')">f₇ RearComp</button>
+  <button class="tab-btn" onclick="setTab(this,'f8')">f₈ FlatRoof</button>
+  <button class="tab-btn" onclick="setTab(this,'compare')">📊 Perbandingan</button>
+</div>
+
+<div class="content">
+
+<!-- ══════════════════════════════ TAB: SILUET ══════════════════════════════ -->
+<div class="feat-tab active" id="tab-siluet">
+  <div class="grid-2">
+    <div class="card full">
+      <div class="card-title"><span class="cdot" style="background:#60a5fa"></span>Siluet 100-Bin dari Sensor LiDAR — <span id="sil-veh-name" style="color:#a5b4fc;margin-left:4px">MPV</span></div>
+      <div class="sil-wrap"><canvas id="cvMain" height="320"></canvas></div>
+      <div class="bin-tip" id="binTip">🖱️ Arahkan kursor ke grafik untuk melihat nilai tiap titik pengukuran sensor</div>
+    </div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Cara Siluet Terbentuk</div>
+      <div style="font-size:.8rem;color:#64748b;line-height:1.8">
+        <p>① Sensor LiDAR dipasang <strong style="color:#94a3b8">di atas portal</strong>, menembak laser vertikal ke bawah tiap <strong style="color:#60a5fa">10 ms</strong></p><br>
+        <p>② Saat mobil lewat, jarak yang terukur dikurangkan dari tinggi portal → <strong style="color:#34d399">tinggi atap (cm)</strong></p><br>
+        <p>③ Ratusan titik direkam bersama timestamp, lalu dikonversi ke <strong style="color:#a78bfa">100 bin spasial</strong> (0%=depan, 100%=belakang)</p><br>
+        <p>④ Dari 100 bin ini diekstrak <strong style="color:#fbbf24">8 fitur matematis</strong> sebagai "sidik jari" kendaraan</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f59e0b"></span>Nilai 8 Fitur Saat Ini</div>
+      <div id="featSummary" style="font-size:.77rem;line-height:2"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f87171"></span>Mengapa 100 Bin?</div>
+      <div style="font-size:.8rem;color:#64748b;line-height:1.8">
+        <p>Mobil cepat → sedikit titik data. Mobil lambat → banyak titik data.</p><br>
+        <p>Tanpa normalisasi bin, siluet <strong style="color:#f87171">tidak bisa dibandingkan</strong> antar kecepatan berbeda.</p><br>
+        <p>Dengan 100 bin: bin ke-50 <strong style="color:#34d399">selalu mewakili titik tengah</strong> kendaraan, terlepas dari kecepatannya. Ini membuat fitur <strong style="color:#a78bfa">speed-invariant</strong> (kebal terhadap perbedaan kecepatan).</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F1 PANJANG ══════════════════════════ -->
+<div class="feat-tab" id="tab-f1">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#60a5fa"></span>Grafik v-t — Kecepatan vs Waktu</div>
+      <canvas id="cvVT" height="260"></canvas>
+      <div class="leg">
+        <div class="leg-i"><div class="leg-b" style="background:#3b82f6;opacity:.7"></div>Luas □ = V<sub>in</sub>·t (Suku 1)</div>
+        <div class="leg-i"><div class="leg-b" style="background:#a78bfa;opacity:.7"></div>Luas △ = ½·a·t² (Suku 2)</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Grafik s-t — Posisi vs Waktu (Parabola GLBB)</div>
+      <canvas id="cvST" height="260"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#fbbf24"></span>Parameter Simulasi — Atur & Lihat Perubahan</div>
+      <div class="ctrl-row c3">
+        <div class="ctrl-group"><label>V<sub>in</sub> — Kecepatan Masuk</label><div class="val" id="lbl-vin">2.0 km/h</div><input type="range" id="sl-vin" min="1" max="20" step="0.5" value="2" oninput="updateF1()"></div>
+        <div class="ctrl-group"><label>V<sub>out</sub> — Kecepatan Keluar</label><div class="val" id="lbl-vout">3.2 km/h</div><input type="range" id="sl-vout" min="1" max="20" step="0.5" value="3.2" oninput="updateF1()"></div>
+        <div class="ctrl-group"><label>t<sub>durasi</sub> — Sensor Tertutup</label><div class="val" id="lbl-td">7.3 s</div><input type="range" id="sl-td" min="1" max="20" step="0.1" value="7.3" oninput="updateF1()"></div>
+      </div>
+      <div class="badges">
+        <div class="badge"><div class="bl">Akselerasi a</div><div class="bv fa" id="b-a">—</div></div>
+        <div class="badge"><div class="bl">Suku 1 (V·t)</div><div class="bv fb" id="b-s1">—</div></div>
+        <div class="badge"><div class="bl">Suku 2 (½at²)</div><div class="bv fv" id="b-s2" style="color:#a78bfa">—</div></div>
+        <div class="badge" style="border-color:#34d399"><div class="bl">Panjang</div><div class="bv fg" id="b-pjg">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#60a5fa"></span>Rumus Fisika — GLBB (Newton)</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fg">Panjang</span><span class="fw">=</span><span class="fb">(V<sub>in</sub> × t)</span><span class="fw">+</span><span class="fv">(½ × a × t²)</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fg">Panjang</span><span class="fw">=</span><span class="fb" id="f1-r1">—</span><span class="fw">+</span><span class="fv" id="f1-r2">—</span><span class="fw">=</span><span class="fg" id="f1-rt">—</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 <strong style="color:#94a3b8">Mengapa ada suku ½·a·t²?</strong></p>
+        <p>Pada grafik v-t di kiri, jarak tempuh = luas area di bawah garis kecepatan. Area itu terdiri dari <strong style="color:#3b82f6">persegi panjang</strong> (kecepatan konstan) + <strong style="color:#a78bfa">segitiga</strong> (pertambahan kecepatan). Luas segitiga = ½ × alas × tinggi, sehingga muncul koefisien ½.</p>
+        <br><p>📌 <strong style="color:#94a3b8">Akselerasi a</strong> = (V<sub>out</sub> − V<sub>in</sub>) / t<sub>durasi</sub>, diperoleh dari waktu tempuh bumper depan S1→S2 vs bumper belakang S1→S2.</p>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title"><span class="cdot" style="background:#8b5cf6"></span>Animasi Fisik — Kendaraan Melewati Dua Sensor</div>
+    <canvas id="cvSensor" height="160"></canvas>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F2 TINGGI ══════════════════════════ -->
+<div class="feat-tab" id="tab-f2">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Ilustrasi Pengukuran Tinggi dari Siluet</div>
+      <canvas id="cvTinggi" height="300"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Distribusi Tinggi Antar Kelas Kendaraan</div>
+      <canvas id="cvTinggiDist" height="300"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Rumus</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fg">Tinggi</span><span class="fw">=</span><span class="fa">TARGET_JARAK_KOSONG</span><span class="fw">−</span><span class="fb">jarakMulus</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fg">= 250 cm</span><span class="fw">−</span><span class="fb" id="f2-jarak">— cm</span><span class="fw">=</span><span class="fg" id="f2-result">—</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 <code style="color:#60a5fa">jarakMulus</code> adalah jarak yang dibaca sensor LiDAR dari sensor ke permukaan atap mobil (sudah di-filter dengan EMA).</p>
+        <br><p>📌 <code style="color:#60a5fa">TARGET_JARAK_KOSONG</code> = 250 cm adalah tinggi portal saat tidak ada kendaraan (dikalibrasi sebelum pengujian).</p>
+        <br><p>📌 Sistem mencari nilai <strong style="color:#34d399">tinggiMaks</strong> dari seluruh buffer sampel — itulah tinggi atap tertinggi kendaraan.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#34d399"></span>Nilai Fitur untuk Kendaraan yang Dipilih</div>
+      <div class="badges" style="flex-wrap:wrap">
+        <div class="badge"><div class="bl">Tinggi Maks Terukur</div><div class="bv fg" id="f2-maks">—</div></div>
+        <div class="badge"><div class="bl">Kelas</div><div class="bv" style="color:#a5b4fc" id="f2-kelas">—</div></div>
+      </div>
+      <div class="insight" id="f2-insight" style="background:rgba(52,211,153,.07);border-color:#34d399;color:#34d399;margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F3 STDDEV ══════════════════════════ -->
+<div class="feat-tab" id="tab-f3">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f59e0b"></span>Grafik Deviasi Tiap Bin dari Rata-Rata</div>
+      <canvas id="cvStd" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f59e0b"></span>Histogram Distribusi Tinggi Bin</div>
+      <canvas id="cvStdHist" height="280"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f59e0b"></span>Rumus Standar Deviasi</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fa">σ</span><span class="fw">=</span><span class="fb">√(</span><span class="fv">Σ(h_bin − h̄)²</span><span class="fw">/</span><span class="fg">N</span><span class="fb">)</span><span class="fw">×</span><span class="fa">K_lkg</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fa">f₃</span><span class="fw">=</span><span class="fg" id="f3-result">—</span></div>
+      </div>
+      <div style="margin-top:12px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 <strong style="color:#94a3b8">h_bin</strong> = tinggi rata-rata tiap bin spasial (0–99)</p>
+        <br><p>📌 <strong style="color:#94a3b8">h̄</strong> = rata-rata dari semua 100 bin</p>
+        <br><p>📌 <strong style="color:#fbbf24">K_lkg</strong> = kompensasi bias LKG (nilai > 1 jika banyak bin berulang akibat kaca)</p>
+        <br><p>📌 Nilai σ tinggi = profil atap <strong style="color:#f59e0b">banyak lekukan</strong> (sedan). Nilai rendah = atap <strong style="color:#34d399">rata dan kotak</strong> (MPV/bus).</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f59e0b"></span>Perbandingan StdDev Antar Kelas</div>
+      <canvas id="cvStdComp" height="200"></canvas>
+      <div class="insight" id="f3-insight" style="background:rgba(245,158,11,.07);border-color:#f59e0b;color:#f59e0b;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F4 POSMAX ══════════════════════════ -->
+<div class="feat-tab" id="tab-f4">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#a78bfa"></span>Ilustrasi Posisi Titik Tertinggi pada Siluet</div>
+      <canvas id="cvPosMax" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#a78bfa"></span>Perbandingan PosMax Antar Kelas</div>
+      <canvas id="cvPosComp" height="280"></canvas>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-title"><span class="cdot" style="background:#a78bfa"></span>Rumus & Penjelasan PosMax</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="formula-box">
+          <div class="frow"><span class="fv">threshold</span><span class="fw">=</span><span class="fg">tinggiMaks</span><span class="fw">× 0.95</span></div>
+          <div class="frow" style="margin-top:4px"><span class="fv">idxMaks</span><span class="fw">= bin pertama yang</span><span class="fg">h_bin ≥ threshold</span></div>
+          <div class="frow" style="margin-top:4px"><span class="fa">f₄</span><span class="fw">=</span><span class="fv">idxMaks</span><span class="fw">/</span><span class="fb">99</span><span class="fw">=</span><span class="fg" id="f4-result">—</span></div>
+        </div>
+        <div style="margin-top:10px;font-size:.78rem;color:#64748b;line-height:1.7">
+          <p>📌 Sistem mencari bin pertama yang tingginya sudah mencapai <strong style="color:#a78bfa">95% dari puncak</strong> (bukan puncak absolut). Ini dilakukan agar <strong style="color:#f59e0b">spoiler/antena kecil</strong> di ujung belakang tidak menggeser posisi puncak secara palsu.</p>
+        </div>
+      </div>
+      <div>
+        <div class="badges" style="flex-direction:column">
+          <div class="badge"><div class="bl">Bin Puncak (idx)</div><div class="bv fv" id="f4-bin">—</div></div>
+          <div class="badge" style="margin-top:8px"><div class="bl">PosMax (0=depan, 1=belakang)</div><div class="bv fv" id="f4-pos">—</div></div>
+          <div class="badge" style="margin-top:8px"><div class="bl">Artinya</div><div class="bv" style="color:#94a3b8;font-size:.85rem" id="f4-arti">—</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F5 SLOPE ══════════════════════════ -->
+<div class="feat-tab" id="tab-f5">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f87171"></span>Ilustrasi Sudut Slope pada Siluet</div>
+      <canvas id="cvSlope" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f87171"></span>Grafik Trigonometri — atan2(Δh, Δx)</div>
+      <canvas id="cvSlopeGraph" height="280"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f87171"></span>Rumus Kemiringan</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fa">Δh</span><span class="fw">=</span><span class="fg">tinggiMaks</span><span class="fw">−</span><span class="fb">h_awal</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fa">Δx</span><span class="fw">= (idxPosMax / 100) ×</span><span class="fv">panjang_cm</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fa">f₅ (Slope)</span><span class="fw">=</span><span class="fg">atan2(Δh, Δx)</span><span class="fw">×</span><span class="fb">180/π</span><span class="fw">=</span><span class="fg" id="f5-result">—</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 <strong style="color:#94a3b8">h_awal</strong> = rata-rata tinggi 5 bin pertama yang valid (ujung moncong kendaraan)</p>
+        <br><p>📌 Fungsi <strong style="color:#f87171">atan2</strong> adalah arctangent dari rasio Δh/Δx, menghasilkan sudut dalam radian, lalu dikonversi ke derajat (× 180/π)</p>
+        <br><p>📌 SUV/Pickup memiliki kap mesin pendek & tegak → slope besar. Sedan memiliki kap panjang & miring → slope kecil.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#f87171"></span>Nilai & Perbandingan</div>
+      <div class="badges">
+        <div class="badge"><div class="bl">Δh (selisih tinggi)</div><div class="bv fa" id="f5-dh">—</div></div>
+        <div class="badge"><div class="bl">Δx (jarak horizontal)</div><div class="bv fb" id="f5-dx">—</div></div>
+        <div class="badge"><div class="bl">Slope</div><div class="bv" style="color:#f87171" id="f5-deg">—</div></div>
+      </div>
+      <canvas id="cvSlopeComp" height="160" style="margin-top:12px"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F6 COMPACTNESS ══════════════════════════ -->
+<div class="feat-tab" id="tab-f6">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#06b6d4"></span>Visualisasi Compactness — Luas Terisi vs Bounding Box</div>
+      <canvas id="cvCompact" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#06b6d4"></span>Perbandingan Compactness Antar Kelas</div>
+      <canvas id="cvCompComp" height="280"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#06b6d4"></span>Rumus Compactness</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fa">h̄</span><span class="fw">= rata-rata semua 100 bin</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fg">f₆</span><span class="fw">=</span><span class="fa">h̄</span><span class="fw">/</span><span class="fb">tinggiMaks</span><span class="fw">=</span><span class="fg" id="f6-result">—</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 Jika rata-rata mendekati tinggi maks → bodi kendaraan <strong style="color:#06b6d4">sangat kotak</strong> (rasio ≈ 0.9)</p>
+        <br><p>📌 Jika banyak bagian rendah (kap mesin panjang, ekor landai) → rata-rata jauh di bawah maks → rasio kecil ≈ 0.6</p>
+        <br><p>📌 Analogi: Compactness seperti menghitung <strong style="color:#94a3b8">seberapa penuh</strong> sebuah bounding box kotak diisi oleh siluet kendaraan.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#06b6d4"></span>Nilai Saat Ini</div>
+      <div class="badges" style="flex-direction:column;gap:8px">
+        <div class="badge"><div class="bl">Rata-rata tinggi (h̄)</div><div class="bv fa" id="f6-mean">—</div></div>
+        <div class="badge"><div class="bl">Tinggi Maksimum</div><div class="bv fb" id="f6-max">—</div></div>
+        <div class="badge" style="border-color:#06b6d4"><div class="bl">Compactness f₆</div><div class="bv" style="color:#06b6d4" id="f6-val">—</div></div>
+      </div>
+      <div class="insight" id="f6-insight" style="background:rgba(6,182,212,.07);border-color:#06b6d4;color:#06b6d4;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F7 REARCOMP ══════════════════════════ -->
+<div class="feat-tab" id="tab-f7">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#e879f9"></span>Ilustrasi — Separuh Belakang Kendaraan</div>
+      <canvas id="cvRear" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#e879f9"></span>Perbedaan RearComp: SUV vs Pickup</div>
+      <canvas id="cvRearComp" height="280"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#e879f9"></span>Rumus RearComp</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fa">sumRear</span><span class="fw">= Σ tinggi_bin[50..99]</span><span class="fb">(abaikan bin ≈ tinggiMaks)</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fg">f₇</span><span class="fw">=</span><span class="fa">(sumRear / N_rear)</span><span class="fw">/</span><span class="fb">tinggiMaks</span><span class="fw">=</span><span class="fg" id="f7-result">—</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 Bin di range 70–99 yang nilainya mendekati tinggiMaks <strong style="color:#e879f9">diabaikan</strong>, karena kemungkinan merupakan nilai LKG (Last-Known-Good) dari kaca belakang mobil, bukan bagian tubuh nyata.</p>
+        <br><p>📌 <strong style="color:#94a3b8">Pickup</strong> memiliki bak terbuka → separuh belakang sangat rendah → f₇ ≈ 0.44</p>
+        <br><p>📌 <strong style="color:#94a3b8">SUV</strong> memiliki bagasi penuh di belakang → separuh belakang tetap tinggi → f₇ ≈ 0.89</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#e879f9"></span>Nilai Saat Ini</div>
+      <div class="badges" style="flex-direction:column;gap:8px">
+        <div class="badge"><div class="bl">Rata-rata tinggi belakang</div><div class="bv fa" id="f7-mean">—</div></div>
+        <div class="badge" style="border-color:#e879f9"><div class="bl">RearComp f₇</div><div class="bv" style="color:#e879f9" id="f7-val">—</div></div>
+      </div>
+      <div class="insight" id="f7-insight" style="background:rgba(232,121,249,.07);border-color:#e879f9;color:#e879f9;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: F8 FLATROOF ══════════════════════════ -->
+<div class="feat-tab" id="tab-f8">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#fb923c"></span>Ilustrasi — Atap Datar vs Tidak Datar</div>
+      <canvas id="cvFlat" height="280"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#fb923c"></span>Perbandingan FlatRoof Antar Kelas</div>
+      <canvas id="cvFlatComp" height="280"></canvas>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#fb923c"></span>Rumus FlatRoof</div>
+      <div class="formula-box">
+        <div class="frow"><span class="fa">threshold</span><span class="fw">=</span><span class="fg">tinggiMaks</span><span class="fw">× 0.90</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fa">flatCount</span><span class="fw">= jumlah bin dimana</span><span class="fb">h_bin ≥ threshold</span></div>
+        <div class="frow" style="margin-top:4px"><span class="fg">f₈</span><span class="fw">=</span><span class="fa">flatCount</span><span class="fw">/</span><span class="fb">100</span><span class="fw">=</span><span class="fg" id="f8-result">—</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:.78rem;color:#64748b;line-height:1.7">
+        <p>📌 Threshold 90% dipilih untuk <strong style="color:#fb923c">toleransi noise</strong> sensor (batas ±10% dari puncak masih dianggap "datar").</p>
+        <br><p>📌 MPV/Bus: atap datar sangat panjang → flatRoof ≈ 0.50–0.60</p>
+        <br><p>📌 Sedan: atap datar hanya di sebagian kecil → flatRoof ≈ 0.35–0.40</p>
+        <br><p>📌 Pickup: hanya bagian kabin yang datar → flatRoof ≈ 0.15–0.20</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="cdot" style="background:#fb923c"></span>Nilai Saat Ini</div>
+      <div class="badges" style="flex-direction:column;gap:8px">
+        <div class="badge"><div class="bl">Jumlah bin datar (flatCount)</div><div class="bv fa" id="f8-cnt">—</div></div>
+        <div class="badge" style="border-color:#fb923c"><div class="bl">FlatRoof f₈</div><div class="bv" style="color:#fb923c" id="f8-val">—</div></div>
+      </div>
+      <div class="insight" id="f8-insight" style="background:rgba(251,146,60,.07);border-color:#fb923c;color:#fb923c;margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ TAB: COMPARE ══════════════════════════════ -->
+<div class="feat-tab" id="tab-compare">
+  <div class="card full" style="margin-bottom:18px">
+    <div class="card-title"><span class="cdot" style="background:#6366f1"></span>Perbandingan Semua Fitur — Radar Chart Antar Kelas</div>
+    <canvas id="cvRadar" height="400"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="cdot" style="background:#6366f1"></span>Tabel Perbandingan Nilai Fitur</div>
+    <div id="compareTable" style="overflow-x:auto"></div>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+//  PROFIL SILUET 100-BIN PER KENDARAAN
+// ══════════════════════════════════════════════════════════════════════════════
+function makeProfile(veh) {
+  const b = new Array(100);
+  if(veh==='citycar'){
+    for(let i=0;i<100;i++){
+      if(i<3)b[i]=5+i*18;else if(i<8)b[i]=56+i*7;else if(i<16)b[i]=92+i*3;
+      else if(i<26)b[i]=114+Math.sin((i-16)/10*Math.PI)*12;else if(i<30)b[i]=125;
+      else if(i<70)b[i]=130+Math.sin((i-30)/40*Math.PI*3)*3;
+      else if(i<80)b[i]=129-i*0.05;else if(i<88)b[i]=126-Math.pow(i-80,1.4)*0.6;
+      else if(i<94)b[i]=116-(i-88)*5;else if(i<97)b[i]=86-(i-94)*18;else b[i]=32-(i-97)*10;
+    }
+  } else if(veh==='sedan'){
+    for(let i=0;i<100;i++){
+      if(i<3)b[i]=5+i*14;else if(i<12)b[i]=42+i*6;else if(i<22)b[i]=96+i*2.2;
+      else if(i<36)b[i]=120+Math.sin((i-22)/14*Math.PI)*8;else if(i<55)b[i]=126+Math.sin((i-36)/19*Math.PI)*4;
+      else if(i<68)b[i]=126-(i-55)*1.8;else if(i<78)b[i]=103-(i-68)*3;
+      else if(i<86)b[i]=73-(i-78)*4;else if(i<94)b[i]=41-(i-86)*3.5;else b[i]=13-(i-94)*3;
+    }
+  } else if(veh==='mpv'){
+    for(let i=0;i<100;i++){
+      if(i<2)b[i]=8+i*28;else if(i<5)b[i]=64+i*20;else if(i<10)b[i]=100+i*6.5;
+      else if(i<18)b[i]=133+i*1.5;else if(i<25)b[i]=147+Math.sin((i-18)/7*Math.PI)*5;
+      else if(i<35)b[i]=153;else if(i<90)b[i]=157+Math.sin((i-35)/55*Math.PI*5)*1.5;
+      else if(i<94)b[i]=157-(i-90)*4.5;else if(i<97)b[i]=139-(i-94)*24;else b[i]=66-(i-97)*22;
+    }
+  } else if(veh==='suv'){
+    for(let i=0;i<100;i++){
+      if(i<2)b[i]=10+i*32;else if(i<5)b[i]=74+i*24;else if(i<10)b[i]=118+i*7;
+      else if(i<20)b[i]=150+Math.sin((i-10)/10*Math.PI)*7;else if(i<25)b[i]=163+i*0.2;
+      else if(i<88)b[i]=167+Math.sin((i-25)/63*Math.PI*6)*1.2;
+      else if(i<93)b[i]=167-(i-88)*3.5;else if(i<97)b[i]=149-(i-93)*22;else b[i]=61-(i-97)*20;
+    }
+  } else { // pickup
+    for(let i=0;i<100;i++){
+      if(i<2)b[i]=12+i*36;else if(i<5)b[i]=84+i*27;else if(i<10)b[i]=142+i*4.5;
+      else if(i<18)b[i]=167+Math.sin((i-10)/8*Math.PI)*4;else if(i<22)b[i]=171;
+      else if(i<28)b[i]=171-(i-22)*17;else if(i<70)b[i]=68+Math.sin((i-28)/42*Math.PI*3)*4;
+      else if(i<80)b[i]=70+Math.sin((i-70)/10*Math.PI)*3;else if(i<92)b[i]=69-(i-80)*1.2;
+      else if(i<96)b[i]=55-(i-92)*5;else b[i]=35-(i-96)*9;
+    }
+  }
+  return b.map(v=>Math.max(0,Math.min(250,v)));
+}
+
+const VEH_LIST = ['citycar','sedan','mpv','suv','pickup'];
+const VEH_NAMES = {citycar:'City Car',sedan:'Sedan',mpv:'MPV',suv:'SUV',pickup:'Pickup'};
+const PROFILES = {};
+VEH_LIST.forEach(v=>PROFILES[v]=makeProfile(v));
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  HITUNG 8 FITUR
+// ══════════════════════════════════════════════════════════════════════════════
+const PANJANG_MAP = {citycar:3.47,sedan:4.58,mpv:3.83,suv:4.14,pickup:5.06};
+const VEH_COLORS = {citycar:'#60a5fa',sedan:'#a78bfa',mpv:'#34d399',suv:'#f59e0b',pickup:'#f87171'};
+
+function computeFeats(veh) {
+  const bins=PROFILES[veh], N=100;
+  const pjg=PANJANG_MAP[veh];
+  const hmax=Math.max(...bins);
+  const hmean=bins.reduce((a,b)=>a+b,0)/N;
+  const vari=bins.reduce((s,b)=>s+(b-hmean)**2,0)/N;
+  let lkgCount=0;
+  bins.forEach((b,i)=>{if(i>0&&Math.abs(b-bins[i-1])<0.5)lkgCount++;});
+  const klkg=1+(lkgCount/N)*0.2;
+  const stddev=(Math.sqrt(vari)*klkg)/100;
+  const t95=hmax*0.95;
+  let posMaxBin=bins.indexOf(hmax);
+  for(let i=0;i<N;i++) if(bins[i]>=t95){posMaxBin=i;break;}
+  const fposmax=posMaxBin/99;
+  let hawal=0,cn=0;
+  for(let i=0;i<N&&cn<5;i++) if(bins[i]>8){hawal+=bins[i];cn++;}
+  hawal=cn>0?hawal/cn:hmean;
+  const dh=Math.max(0,hmax-hawal);
+  const dx=(posMaxBin/N)*pjg*100;
+  const slope=dx>1?Math.atan2(dh,dx)*180/Math.PI:90;
+  const compact=hmax>0?(hmean/100)/(hmax/100):0;
+  let sumR=0,cntR=0;
+  for(let i=50;i<N;i++){if(i>=70&&Math.abs(bins[i]-hmax)<2)continue;sumR+=bins[i];cntR++;}
+  const rearComp=cntR>0&&hmax>0?Math.min(1,(sumR/cntR/100)/(hmax/100)):compact;
+  let flat=0;
+  bins.forEach(b=>{if(b>=hmax*0.9)flat++;});
+  const flatroof=flat/N;
+  return {pjg,hmax,hmean,stddev,posMaxBin,fposmax,dh,dx,slope,compact,rearComp,flatroof,bins};
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  STATE & TAB MANAGEMENT
+// ══════════════════════════════════════════════════════════════════════════════
+let CUR='mpv', CUR_TAB='siluet';
+let hoveredBin=-1;
+
+function setVeh(btn){
+  document.querySelectorAll('.veh-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  CUR=btn.dataset.v;
+  refreshAll();
+}
+
+function setTab(btn,id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.feat-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  CUR_TAB=id;
+  // Wait ONE animation frame so the browser reflows the newly-visible
+  // canvas elements and their offsetWidth is non-zero before we draw.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>refreshAll()));
+}
+
+function refreshAll(){
+  const f=computeFeats(CUR);
+  document.getElementById('sil-veh-name').textContent=VEH_NAMES[CUR];
+  drawMain(f);
+  updateFeatSummary(f);
+  if(CUR_TAB==='f1') refreshF1();
+  if(CUR_TAB==='f2') refreshF2(f);
+  if(CUR_TAB==='f3') refreshF3(f);
+  if(CUR_TAB==='f4') refreshF4(f);
+  if(CUR_TAB==='f5') refreshF5(f);
+  if(CUR_TAB==='f6') refreshF6(f);
+  if(CUR_TAB==='f7') refreshF7(f);
+  if(CUR_TAB==='f8') refreshF8(f);
+  if(CUR_TAB==='compare') refreshCompare();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  HELPER DRAW FUNCTIONS
+// ══════════════════════════════════════════════════════════════════════════════
+function initCanvas(id,h){
+  const cv=document.getElementById(id);
+  if(!cv) return null;
+  const W=cv.offsetWidth||600;
+  const H=h||parseInt(cv.getAttribute('height'))||260;
+  cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  return {cv,ctx,W,H};
+}
+
+function drawGrid(ctx,W,H,pl,pr,pt,pb,nx,ny){
+  ctx.strokeStyle='#0f1a2e'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  for(let i=1;i<=nx;i++){const x=pl+(W-pl-pr)/nx*i;ctx.beginPath();ctx.moveTo(x,pt);ctx.lineTo(x,H-pb);ctx.stroke();}
+  for(let i=1;i<=ny;i++){const y=H-pb-(H-pt-pb)/ny*i;ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(W-pr,y);ctx.stroke();}
+  ctx.setLineDash([]);
+}
+
+function drawAxes(ctx,W,H,pl,pr,pt,pb,xl,yl){
+  ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pl,pt); ctx.lineTo(pl,H-pb); ctx.lineTo(W-pr,H-pb); ctx.stroke();
+  ctx.fillStyle='#475569'; ctx.font='11px Inter'; ctx.textAlign='center';
+  ctx.fillText(xl,W-pr,H-pb+3);
+  ctx.save(); ctx.translate(pl-14,(pt+H-pb)/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText(yl,0,0); ctx.restore();
+}
+
+function txt(ctx,x,y,s,c='#94a3b8',al='center',sz=10){
+  ctx.fillStyle=c; ctx.font=`${sz}px Inter`; ctx.textAlign=al; ctx.fillText(s,x,y);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  MAIN SILUET CANVAS
+// ══════════════════════════════════════════════════════════════════════════════
+function drawMain(f){
+  const r=initCanvas('cvMain',320); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=16,PT=18,PB=44;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, N=100, hmax=250;
+  const toX=b=>PL+(b/99)*pw;
+  const toY=h=>H-PB-(h/hmax)*ph;
+
+  drawGrid(ctx,W,H,PL,PR,PT,PB,10,5);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','Tinggi (cm)');
+
+  // Y labels
+  [0,50,100,150,200,250].forEach(v=>{txt(ctx,PL-6,toY(v)+4,v,'#475569','right',9);});
+  // X labels
+  [0,20,40,60,80,99].forEach(b=>{txt(ctx,toX(b),H-PB+14,b,'#475569','center',9);});
+
+  // Portal line
+  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=1; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(PL,PT+2); ctx.lineTo(W-PR,PT+2); ctx.stroke();
+  ctx.setLineDash([]);
+  txt(ctx,PL+4,PT+12,'▲ Portal (250cm)','#374151','left',9);
+
+  const col=VEH_COLORS[CUR];
+  // Fill
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'88'); g.addColorStop(1,col+'15');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+
+  // Outline
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.shadowColor=col; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+
+  // Hover
+  if(hoveredBin>=0){
+    const hx=toX(hoveredBin), hy=toY(bins[hoveredBin]);
+    ctx.strokeStyle='#ffffff33'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(hx,PT); ctx.lineTo(hx,H-PB); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(hx,hy,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(hx,hy,3,0,Math.PI*2); ctx.fill();
+  }
+}
+
+function updateFeatSummary(f){
+  const el=document.getElementById('featSummary'); if(!el)return;
+  const items=[
+    ['f₁ Panjang',f.pjg.toFixed(2)+' m','#60a5fa'],
+    ['f₂ Tinggi',( f.hmax/100).toFixed(2)+' m','#34d399'],
+    ['f₃ StdDev',f.stddev.toFixed(3),'#f59e0b'],
+    ['f₄ PosMax',f.fposmax.toFixed(3),'#a78bfa'],
+    ['f₅ Slope',f.slope.toFixed(1)+'°','#f87171'],
+    ['f₆ Compact',f.compact.toFixed(3),'#06b6d4'],
+    ['f₇ Rear',f.rearComp.toFixed(3),'#e879f9'],
+    ['f₈ Flat',(f.flatroof*100).toFixed(1)+'%','#fb923c'],
+  ];
+  el.innerHTML=items.map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #1e293b;padding:2px 0">
+    <span style="color:#64748b">${l}</span><span style="color:${c};font-family:'JetBrains Mono',monospace">${v}</span></div>`).join('');
+}
+
+// Hover on main canvas
+document.getElementById('cvMain').addEventListener('mousemove',e=>{
+  const cv=document.getElementById('cvMain');
+  const rect=cv.getBoundingClientRect();
+  const PL=50,PR=16;
+  const pw=cv.offsetWidth-PL-PR;
+  const mx=e.clientX-rect.left-PL;
+  hoveredBin=Math.max(0,Math.min(99,Math.round(mx/pw*99)));
+  const h=PROFILES[CUR][hoveredBin]||0;
+  document.getElementById('binTip').innerHTML=
+    `Bin <span>${hoveredBin}</span> | Posisi <span>${hoveredBin}%</span> dari panjang | Tinggi atap: <span>${h.toFixed(1)} cm</span> | Jarak sensor ke atap: <span>${(250-h).toFixed(1)} cm</span>`;
+  drawMain(computeFeats(CUR));
+});
+document.getElementById('cvMain').addEventListener('mouseleave',()=>{hoveredBin=-1;drawMain(computeFeats(CUR));});
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F1: PANJANG — GLBB
+// ══════════════════════════════════════════════════════════════════════════════
+function updateF1(){
+  const vin=parseFloat(document.getElementById('sl-vin').value)/3.6*100;
+  const vout=parseFloat(document.getElementById('sl-vout').value)/3.6*100;
+  const td=parseFloat(document.getElementById('sl-td').value);
+  document.getElementById('lbl-vin').textContent=(vin/100*3.6).toFixed(1)+' km/h';
+  document.getElementById('lbl-vout').textContent=(vout/100*3.6).toFixed(1)+' km/h';
+  document.getElementById('lbl-td').textContent=td.toFixed(1)+' s';
+  const a=(vout-vin)/td;
+  const s1=vin*td, s2=0.5*a*td*td, pjg=Math.max(0,s1+s2);
+  document.getElementById('b-a').textContent=(a/100).toFixed(4)+' m/s²';
+  document.getElementById('b-s1').textContent=s1.toFixed(0)+' cm';
+  document.getElementById('b-s2').textContent=s2.toFixed(0)+' cm';
+  document.getElementById('b-pjg').textContent=(pjg/100).toFixed(3)+' m';
+  document.getElementById('f1-r1').textContent=s1.toFixed(0)+' cm';
+  document.getElementById('f1-r2').textContent=s2.toFixed(0)+' cm';
+  document.getElementById('f1-rt').textContent=(pjg/100).toFixed(3)+' m';
+  drawVT(vin,vout,td,a,s1,s2);
+  drawST(vin,vout,td,a,pjg);
+  drawSensorAnim(vin,vout,td,pjg);
+  requestAnimationFrame(()=>{if(CUR_TAB==='f1')updateF1_anim();});
+}
+
+let animFrame=null;
+function updateF1_anim(){
+  drawSensorAnim(
+    parseFloat(document.getElementById('sl-vin').value)/3.6*100,
+    parseFloat(document.getElementById('sl-vout').value)/3.6*100,
+    parseFloat(document.getElementById('sl-td').value),
+    parseFloat(document.getElementById('b-pjg').textContent)*100
+  );
+  if(CUR_TAB==='f1') animFrame=requestAnimationFrame(updateF1_anim);
+}
+
+function refreshF1(){
+  updateF1();
+  if(animFrame) cancelAnimationFrame(animFrame);
+  animFrame=requestAnimationFrame(updateF1_anim);
+}
+
+function drawVT(vin,vout,td,a,s1,s2){
+  const r=initCanvas('cvVT',260); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=52,PR=20,PT=16,PB=50;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const vm=Math.max(vin,vout)*1.2;
+  const toX=t=>PL+(t/td)*pw, toY=v=>H-PB-(v/vm)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Waktu (s)','Kecepatan (cm/s)');
+  for(let i=0;i<=5;i++) txt(ctx,toX(td*i/5),H-PB+14,(td*i/5).toFixed(1));
+  for(let i=0;i<=4;i++) txt(ctx,PL-6,toY(vm*i/4)+4,Math.round(vm*i/4),'#475569','right',9);
+
+  // Rect (s1)
+  ctx.fillStyle='rgba(59,130,246,0.22)';
+  ctx.fillRect(toX(0),toY(vin),pw,toY(0)-toY(vin));
+  // Triangle (s2)
+  ctx.fillStyle='rgba(167,139,250,0.28)';
+  ctx.beginPath(); ctx.moveTo(toX(0),toY(vin)); ctx.lineTo(toX(td),toY(vin)); ctx.lineTo(toX(td),toY(vout)); ctx.closePath(); ctx.fill();
+  // Velocity line
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(toX(0),toY(vin)); ctx.lineTo(toX(td),toY(vout)); ctx.stroke();
+  // Dashed refs
+  ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.strokeStyle='#3b82f6'; ctx.beginPath(); ctx.moveTo(PL,toY(vin)); ctx.lineTo(toX(td),toY(vin)); ctx.stroke();
+  ctx.strokeStyle='#a78bfa'; ctx.beginPath(); ctx.moveTo(PL,toY(vout)); ctx.lineTo(toX(td),toY(vout)); ctx.stroke();
+  ctx.setLineDash([]);
+  // Points
+  [[0,vin,'#60a5fa','Vᵢₙ'],[td,vout,'#c084fc','Vₒᵤₜ']].forEach(([t,v,c,l])=>{
+    ctx.fillStyle=c; ctx.beginPath(); ctx.arc(toX(t),toY(v),5,0,Math.PI*2); ctx.fill();
+    txt(ctx,toX(t)+(t===0?20:-4),toY(v)-8,l,c,t===0?'left':'right',10);
+  });
+  // Area labels
+  txt(ctx,(toX(0)+toX(td))/2,(toY(0)+toY(vin))/2+4,'□ '+s1.toFixed(0)+' cm','#60a5fa','center',9);
+  if(Math.abs(s2)>5) txt(ctx,toX(td)-12,toY(vin)-Math.abs(toY(vout)-toY(vin))/2,'△ '+s2.toFixed(0)+' cm','#c084fc','right',9);
+  // t_dur brace
+  const by=H-PB+28;
+  ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(toX(0),by); ctx.lineTo(toX(td),by); ctx.stroke();
+  txt(ctx,(toX(0)+toX(td))/2,by+12,'t_durasi = '+td.toFixed(1)+' s','#fbbf24','center',9);
+}
+
+function drawST(vin,vout,td,a,pjg){
+  const r=initCanvas('cvST',260); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=52,PR=20,PT=16,PB=50;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const sm=Math.max(pjg,10)*1.12;
+  const toX=t=>PL+(t/td)*pw, toY=s=>H-PB-(s/sm)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Waktu (s)','Posisi (cm)');
+  for(let i=0;i<=5;i++) txt(ctx,toX(td*i/5),H-PB+14,(td*i/5).toFixed(1));
+  for(let i=0;i<=4;i++) txt(ctx,PL-6,toY(sm*i/4)+4,Math.round(sm*i/4),'#475569','right',9);
+  // Curve
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=2.5; ctx.shadowColor='#34d399'; ctx.shadowBlur=6;
+  ctx.beginPath();
+  for(let i=0;i<=100;i++){const t=td*i/100; const s=vin*t+0.5*a*t*t; i===0?ctx.moveTo(toX(t),toY(s)):ctx.lineTo(toX(t),toY(s));}
+  ctx.stroke(); ctx.shadowBlur=0;
+  // End point
+  ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.arc(toX(td),toY(pjg),6,0,Math.PI*2); ctx.fill();
+  txt(ctx,toX(td)-8,toY(pjg)-10,'='+(pjg/100).toFixed(3)+'m','#34d399','right',10);
+  // Dashes
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(PL,toY(pjg)); ctx.lineTo(toX(td),toY(pjg)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(td),H-PB); ctx.lineTo(toX(td),toY(pjg)); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawSensorAnim(vin,vout,td,pjg){
+  const r=initCanvas('cvSensor',160); if(!r)return;
+  const {ctx,W,H}=r;
+  const GND=H-30, PL=50, PR=50, TRK=W-PL-PR;
+  ctx.strokeStyle='#334155'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(PL,GND); ctx.lineTo(W-PR,GND); ctx.stroke();
+  const s1x=PL+TRK*0.28, s2x=PL+TRK*0.52, POLH=90, SY=GND-POLH;
+  function post(x,nm,col){
+    ctx.strokeStyle=col; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x,GND); ctx.lineTo(x,SY+10); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.roundRect(x-20,SY-7,40,18,4); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 9px Inter'; ctx.textAlign='center'; ctx.fillText(nm,x,SY+5);
+    ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(x,SY+11); ctx.lineTo(x,GND); ctx.stroke(); ctx.setLineDash([]);
+  }
+  post(s1x,'Sensor 1','#3b82f6'); post(s2x,'Sensor 2','#8b5cf6');
+  const brY=SY-12;
+  ctx.strokeStyle='#475569'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(s1x,brY); ctx.lineTo(s2x,brY); ctx.stroke();
+  txt(ctx,(s1x+s2x)/2,brY-5,'53cm','#64748b','center',8);
+  const sc=TRK/600;
+  const cw=Math.min(pjg*sc,TRK*0.55), ch=42, cy=GND-ch;
+  const now=(Date.now()/5000)%1;
+  const cx=PL-cw+now*(TRK+cw*2);
+  ctx.fillStyle='#1e3a5f'; ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(cx,cy,cw,ch,5); ctx.fill(); ctx.stroke();
+  [0.15,0.82].forEach(rx=>{ctx.fillStyle='#334155'; ctx.strokeStyle='#60a5fa'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(cx+cw*rx,GND,8,0,Math.PI*2); ctx.fill(); ctx.stroke();});
+  [s1x,s2x].forEach(sx=>{
+    if(sx>cx&&sx<cx+cw){
+      ctx.strokeStyle='#ef4444'; ctx.lineWidth=2; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(sx,SY+11); ctx.lineTo(sx,cy+ch); ctx.stroke(); ctx.setLineDash([]);
+      txt(ctx,sx+10,(SY+cy)/2,'TERTUTUP','#ef4444','left',8);
+    }
+  });
+  const pbY=GND+12;
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx,pbY); ctx.lineTo(cx+cw,pbY); ctx.stroke();
+  txt(ctx,cx+cw/2,pbY+10,(pjg/100).toFixed(2)+'m','#34d399','center',8);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F2: TINGGI
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF2(f){
+  const jarak=(250-f.hmax).toFixed(1);
+  document.getElementById('f2-jarak').textContent=jarak+' cm';
+  document.getElementById('f2-result').textContent=(f.hmax/100).toFixed(3)+' m';
+  document.getElementById('f2-maks').textContent=(f.hmax/100).toFixed(3)+' m ('+f.hmax.toFixed(1)+' cm)';
+  document.getElementById('f2-kelas').textContent=VEH_NAMES[CUR];
+  const ins=f.hmax<150?'🚗 Kendaraan rendah (City Car/Sedan) — ground clearance minimal':f.hmax<165?'🚐 Kendaraan menengah (MPV) — tinggi ideal untuk penumpang':'🛻 Kendaraan tinggi (SUV/Pickup) — ground clearance tinggi untuk medan berat';
+  document.getElementById('f2-insight').textContent=ins;
+  drawTinggi(f);
+  drawTinggiDist();
+}
+
+function drawTinggi(f){
+  const r=initCanvas('cvTinggi',300); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=20,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','cm');
+  [0,50,100,150,200,250].forEach(v=>{txt(ctx,PL-6,toY(v)+4,v,'#475569','right',9);});
+  [0,25,50,75,99].forEach(b=>{txt(ctx,toX(b),H-PB+12,b,'#475569','center',9);});
+
+  const col=VEH_COLORS[CUR];
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'88'); g.addColorStop(1,col+'10');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+
+  // Find max bin
+  const mi=bins.indexOf(f.hmax);
+  const mx=toX(mi), my=toY(f.hmax);
+
+  // Vertical arrow
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(mx+20,H-PB); ctx.lineTo(mx+20,my); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mx+20,my); ctx.lineTo(mx+15,my+8); ctx.moveTo(mx+20,my); ctx.lineTo(mx+25,my+8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(mx+20,H-PB); ctx.lineTo(mx+15,H-PB-8); ctx.moveTo(mx+20,H-PB); ctx.lineTo(mx+25,H-PB-8); ctx.stroke();
+  txt(ctx,mx+38,(H-PB+my)/2,'Tinggi = '+(f.hmax/100).toFixed(2)+'m','#34d399','left',10);
+
+  // Max dot
+  ctx.fillStyle='#34d399'; ctx.beginPath(); ctx.arc(mx,my,6,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(PL,my); ctx.lineTo(mx,my); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,PL-6,my+4,f.hmax.toFixed(0),'#34d399','right',9);
+
+  // Portal
+  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=1; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(PL,PT+2); ctx.lineTo(W-PR,PT+2); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,PL+4,PT+11,'Portal 250cm','#374151','left',8);
+}
+
+function drawTinggiDist(){
+  const r=initCanvas('cvTinggiDist',300); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=60,PR=20,PT=20,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const data=VEH_LIST.map(v=>({veh:v,val:computeFeats(v).hmax}));
+  const vmax=Math.max(...data.map(d=>d.val))*1.1;
+  const bw=pw/data.length*0.7, gap=pw/data.length;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,data.length,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Kelas','Tinggi (cm)');
+  for(let i=0;i<=4;i++) txt(ctx,PL-6,H-PB-(ph/4*i)+4,Math.round(vmax/4*i),'#475569','right',9);
+  data.forEach((d,i)=>{
+    const x=PL+gap*i+(gap-bw)/2, y=H-PB-(d.val/vmax)*ph;
+    const col=VEH_COLORS[d.veh];
+    ctx.fillStyle=d.veh===CUR?col:col+'55';
+    ctx.strokeStyle=col;ctx.lineWidth=d.veh===CUR?2:1;
+    ctx.beginPath(); ctx.roundRect(x,y,bw,H-PB-y,4); ctx.fill(); ctx.stroke();
+    txt(ctx,x+bw/2,y-6,d.val.toFixed(0)+'cm',col,'center',9);
+    txt(ctx,x+bw/2,H-PB+14,VEH_NAMES[d.veh],'#64748b','center',9);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F3: STDDEV
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF3(f){
+  document.getElementById('f3-result').textContent=f.stddev.toFixed(4);
+  const ins=f.stddev<0.30?'📦 Atap sangat rata dan konsisten — profil boxy (bus/MPV)':f.stddev<0.38?'🚐 Variasi normal — profil MPV/SUV standar':'🏎️ Banyak lekukan atap — profil sedan/sporty';
+  document.getElementById('f3-insight').textContent=ins;
+  drawStdDev(f);
+  drawStdHist(f);
+  drawCompBar('cvStdComp',VEH_LIST.map(v=>({veh:v,val:computeFeats(v).stddev*100})),'StdDev ×100','#f59e0b');
+}
+
+function drawStdDev(f){
+  const r=initCanvas('cvStd',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=52,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, N=100;
+  const hmean=f.hmean;
+  const dmax=Math.max(...bins.map(b=>Math.abs(b-hmean)))*1.2;
+  const toX=b=>PL+(b/99)*pw;
+  const toY=d=>H/2-(d/(dmax||1))*(ph/2);
+
+  drawGrid(ctx,W,H,PL,PR,PT,PB,10,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin','Deviasi (cm)');
+  // Zero line
+  ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(PL,H/2); ctx.lineTo(W-PR,H/2); ctx.stroke();
+  txt(ctx,PL-6,H/2+4,'0','#475569','right',9);
+
+  bins.forEach((b,i)=>{
+    const d=b-hmean;
+    const x=toX(i), y0=H/2, y1=toY(d);
+    ctx.strokeStyle=d>=0?'#34d399':'#f87171'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1); ctx.stroke();
+  });
+
+  // Std lines
+  const stdPx=(f.stddev*100/(dmax||1))*(ph/2);
+  [1,-1].forEach(s=>{
+    ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+    const sy=H/2-s*stdPx;
+    ctx.beginPath(); ctx.moveTo(PL,sy); ctx.lineTo(W-PR,sy); ctx.stroke();
+    ctx.setLineDash([]);
+    txt(ctx,W-PR-4,sy-4,(s>0?'+':'-')+'σ','#fbbf24','right',9);
+  });
+  txt(ctx,W/2,PT+12,'Deviasi tiap bin dari rata-rata | σ = '+f.stddev.toFixed(3),'#f59e0b','center',10);
+}
+
+function drawStdHist(f){
+  const r=initCanvas('cvStdHist',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=40,PR=16,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins;
+  const NBINS=20, hmin=Math.min(...bins), hmax=Math.max(...bins);
+  const bsize=(hmax-hmin)/NBINS;
+  const counts=new Array(NBINS).fill(0);
+  bins.forEach(b=>{const idx=Math.min(NBINS-1,Math.floor((b-hmin)/bsize));counts[idx]++;});
+  const cmax=Math.max(...counts);
+  const bw=pw/NBINS;
+  const toX=i=>PL+i*bw;
+  const toY=c=>H-PB-(c/cmax)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Tinggi (cm)','Frekuensi');
+  counts.forEach((c,i)=>{
+    const x=toX(i), y=toY(c);
+    ctx.fillStyle='rgba(245,158,11,0.4)';
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.rect(x,y,bw-1,H-PB-y); ctx.fill(); ctx.stroke();
+  });
+  for(let i=0;i<=4;i++){
+    const v=hmin+(hmax-hmin)*i/4;
+    txt(ctx,toX(NBINS*i/4),H-PB+13,Math.round(v)+'','#475569','center',8);
+  }
+  // Mean line
+  const meanPx=PL+(f.hmean-hmin)/(hmax-hmin)*pw;
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(meanPx,PT); ctx.lineTo(meanPx,H-PB); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,meanPx+4,PT+12,'h̄='+f.hmean.toFixed(0),'#34d399','left',9);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F4: POSMAX
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF4(f){
+  document.getElementById('f4-result').textContent=f.fposmax.toFixed(3);
+  document.getElementById('f4-bin').textContent='Bin '+f.posMaxBin;
+  document.getElementById('f4-pos').textContent=f.fposmax.toFixed(3)+' (= '+f.posMaxBin+'%)';
+  document.getElementById('f4-arti').textContent=f.posMaxBin<40?'Puncak di depan (MPV cab-forward)':f.posMaxBin<65?'Puncak di tengah (SUV/Sedan)':'Puncak di belakang';
+  drawPosMax(f);
+  drawCompBar('cvPosComp',VEH_LIST.map(v=>({veh:v,val:computeFeats(v).fposmax})),'PosMax (0–1)','#a78bfa');
+}
+
+function drawPosMax(f){
+  const r=initCanvas('cvPosMax',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','Tinggi (cm)');
+  const col=VEH_COLORS[CUR];
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'55'); g.addColorStop(1,col+'08');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.stroke();
+
+  // 95% threshold
+  const t95=f.hmax*0.95;
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(PL,toY(t95)); ctx.lineTo(W-PR,toY(t95)); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,W-PR-4,toY(t95)-6,'95%','#fbbf24','right',9);
+
+  // PosMax arrow
+  const pmx=toX(f.posMaxBin), pmy=toY(bins[f.posMaxBin]);
+  ctx.strokeStyle='#a78bfa'; ctx.lineWidth=2; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(pmx,PT); ctx.lineTo(pmx,H-PB); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#a78bfa'; ctx.beginPath(); ctx.arc(pmx,pmy,7,0,Math.PI*2); ctx.fill();
+  txt(ctx,pmx,PT-5,'PosMax='+f.fposmax.toFixed(3),'#a78bfa','center',10);
+
+  // Front→PosMax brace
+  const by=H-PB+16;
+  ctx.strokeStyle='#a78bfa'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(toX(0),by); ctx.lineTo(pmx,by); ctx.stroke();
+  txt(ctx,(toX(0)+pmx)/2,by+12,f.posMaxBin+'% dari panjang','#a78bfa','center',8);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F5: SLOPE
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF5(f){
+  document.getElementById('f5-result').textContent=f.slope.toFixed(2)+'°';
+  document.getElementById('f5-dh').textContent=f.dh.toFixed(1)+' cm';
+  document.getElementById('f5-dx').textContent=f.dx.toFixed(1)+' cm';
+  document.getElementById('f5-deg').textContent=f.slope.toFixed(2)+'°';
+  drawSlopeIllus(f);
+  drawSlopeGraph(f);
+  drawCompBar('cvSlopeComp',VEH_LIST.map(v=>({veh:v,val:computeFeats(v).slope})),'Slope (°)','#f87171');
+}
+
+function drawSlopeIllus(f){
+  const r=initCanvas('cvSlope',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','Tinggi (cm)');
+  const col=VEH_COLORS[CUR];
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'55'); g.addColorStop(1,col+'08');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=1.8; ctx.stroke();
+
+  // Slope line
+  let hawal=0,cn=0;
+  for(let i=0;i<100&&cn<5;i++) if(bins[i]>8){hawal+=bins[i];cn++;}
+  hawal=cn>0?hawal/cn:bins[0];
+  const sx=toX(0), sy=toY(hawal);
+  const ex=toX(f.posMaxBin), ey=toY(f.hmax);
+  ctx.strokeStyle='#f87171'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+
+  // Arc for angle
+  const len=Math.min(60,Math.sqrt((ex-sx)**2+(ey-sy)**2)*0.4);
+  const ang=Math.atan2(sy-ey,ex-sx);
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(sx,sy,-ang,0,true); // simplified arc
+  ctx.beginPath(); ctx.arc(sx,sy,len,0,-ang,true); ctx.stroke();
+  txt(ctx,sx+len+12,sy-8,f.slope.toFixed(1)+'°','#fbbf24','left',11);
+
+  // Dh & Dx labels
+  ctx.strokeStyle='#60a5fa'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex,sy); ctx.lineTo(ex,ey); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,(sx+ex)/2,sy+12,'Δx='+f.dx.toFixed(0)+'cm','#60a5fa','center',9);
+  txt(ctx,ex+18,(sy+ey)/2,'Δh='+f.dh.toFixed(0)+'cm','#34d399','left',9);
+}
+
+function drawSlopeGraph(f){
+  const r=initCanvas('cvSlopeGraph',280); if(!r)return;
+  const {ctx,W,H}=r;
+
+  // ── Layout: left 70% = atan2 curve, right 30% = unit circle mini ──
+  const CW=Math.floor(W*0.68), UW=W-CW;
+  const PL=46,PR=4,PT=22,PB=36;
+  const pw=CW-PL-PR, ph=H-PT-PB;
+  const xmax=600, ymax=90;
+  const toX=x=>PL+(x/xmax)*pw;
+  const toY=y=>H-PB-(y/ymax)*ph;
+
+  // ── Background for curve panel ──
+  ctx.fillStyle='#080c18'; ctx.fillRect(0,0,CW,H);
+  // ── Background for unit-circle panel ──
+  ctx.fillStyle='#0a0d1c'; ctx.fillRect(CW,0,UW,H);
+  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(CW,0); ctx.lineTo(CW,H); ctx.stroke();
+
+  // ══ CURVE PANEL ══════════════════════════════════════════════
+  drawGrid(ctx,CW,H,PL,PR,PT,PB,6,4);
+
+  // Axes
+  ctx.strokeStyle='#334155'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL,H-PB); ctx.lineTo(CW-PR,H-PB); ctx.stroke();
+  // Arrow tips
+  ctx.beginPath(); ctx.moveTo(CW-PR,H-PB); ctx.lineTo(CW-PR-6,H-PB-4); ctx.moveTo(CW-PR,H-PB); ctx.lineTo(CW-PR-6,H-PB+4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PL,PT); ctx.lineTo(PL-4,PT+6); ctx.moveTo(PL,PT); ctx.lineTo(PL+4,PT+6); ctx.stroke();
+  txt(ctx,CW-PR+2,H-PB,'Δx','#475569','left',9);
+  txt(ctx,PL,PT-4,'θ°','#475569','center',9);
+
+  // X-axis ticks
+  for(let i=0;i<=6;i++){
+    const xv=xmax*i/6;
+    txt(ctx,toX(xv),H-PB+13,Math.round(xv)+'','#475569','center',8);
+  }
+  // Y-axis ticks
+  [0,15,30,45,60,75,90].forEach(v=>{
+    txt(ctx,PL-4,toY(v)+4,v+'°','#475569','right',8);
+    // horizontal guide at known angles
+    if(v===45||v===30||v===60){
+      ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(PL,toY(v)); ctx.lineTo(CW-PR,toY(v)); ctx.stroke();
+      txt(ctx,PL+4,toY(v)-3,v+'°','rgba(255,255,255,0.15)','left',8);
+    }
+  });
+
+  // ── Draw atan2 curve for EACH vehicle (dim), then current (bright) ──
+  VEH_LIST.forEach(v=>{
+    const fv=computeFeats(v);
+    if(fv.dh<1) return;
+    const isCur=v===CUR;
+    ctx.strokeStyle=isCur?VEH_COLORS[v]:VEH_COLORS[v]+'50';
+    ctx.lineWidth=isCur?2.5:1.2;
+    if(isCur){ctx.shadowColor=VEH_COLORS[v]; ctx.shadowBlur=8;}
+    ctx.beginPath();
+    for(let i=1;i<=240;i++){
+      const x=xmax*i/240;
+      const y=Math.atan2(fv.dh,x)*180/Math.PI;
+      i===1?ctx.moveTo(toX(x),toY(y)):ctx.lineTo(toX(x),toY(y));
+    }
+    ctx.stroke();
+    if(isCur) ctx.shadowBlur=0;
+  });
+
+  // ── Mark each vehicle's actual (Δx, slope) point ──
+  VEH_LIST.forEach(v=>{
+    const fv=computeFeats(v);
+    const col=VEH_COLORS[v];
+    const isCur=v===CUR;
+    const px=toX(Math.min(fv.dx,xmax)), py=toY(Math.min(fv.slope,90));
+    ctx.fillStyle=isCur?col:col+'88';
+    ctx.beginPath(); ctx.arc(px,py,isCur?7:4,0,Math.PI*2); ctx.fill();
+    if(isCur){
+      // Crosshair dashes
+      ctx.strokeStyle=col+'99'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(PL,py); ctx.lineTo(px,py); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px,H-PB); ctx.lineTo(px,py); ctx.stroke();
+      ctx.setLineDash([]);
+      // Label
+      const lx=px>CW*0.72?px-8:px+8;
+      const al=px>CW*0.72?'right':'left';
+      txt(ctx,lx,py-9,VEH_NAMES[v]+' '+fv.slope.toFixed(1)+'°',col,al,9);
+      txt(ctx,toX(fv.dx),H-PB+13,'Δx='+fv.dx.toFixed(0),col,'center',8);
+    } else {
+      // Small dim label
+      txt(ctx,px,py-7,fv.slope.toFixed(0)+'°',col+'cc','center',8);
+    }
+  });
+
+  // Title
+  txt(ctx,PL+pw/2,PT-6,'θ = atan2(Δh, Δx)  —  semua kelas diplot bersama','#475569','center',8);
+
+  // ══ UNIT CIRCLE PANEL ════════════════════════════════════════
+  const UCX=CW+UW/2, UCY=H/2+6;
+  const UCR=Math.min(UW,H)*0.30;
+  const ang=f.slope*Math.PI/180; // angle in radians, measured from +X axis
+
+  // Circle
+  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.arc(UCX,UCY,UCR,0,Math.PI*2); ctx.stroke();
+  // Axes
+  ctx.strokeStyle='#1e3a5f'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(UCX-UCR-8,UCY); ctx.lineTo(UCX+UCR+8,UCY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(UCX,UCY-UCR-8); ctx.lineTo(UCX,UCY+UCR+8); ctx.stroke();
+
+  // Shade sector
+  ctx.fillStyle='rgba(248,113,113,0.12)';
+  ctx.beginPath(); ctx.moveTo(UCX,UCY);
+  ctx.arc(UCX,UCY,UCR,0,-ang,true); // draw angle from +X axis
+  ctx.closePath(); ctx.fill();
+
+  // Hypotenuse (slope line)
+  const ex=UCX+Math.cos(ang)*UCR, ey=UCY-Math.sin(ang)*UCR;
+  ctx.strokeStyle='#f87171'; ctx.lineWidth=2;
+  ctx.shadowColor='#f87171'; ctx.shadowBlur=6;
+  ctx.beginPath(); ctx.moveTo(UCX,UCY); ctx.lineTo(ex,ey); ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Δh (vertical) & Δx (horizontal) legs
+  const lscale=0.70;
+  const lx=UCX+Math.cos(ang)*UCR*lscale, ly=UCY-Math.sin(ang)*UCR*lscale;
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(UCX,UCY); ctx.lineTo(UCX,ly); ctx.stroke(); // Δh
+  ctx.strokeStyle='#60a5fa';
+  ctx.beginPath(); ctx.moveTo(UCX,ly); ctx.lineTo(lx,ly); ctx.stroke(); // Δx horizontal
+  ctx.setLineDash([]);
+
+  // Arc for angle
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(UCX,UCY,UCR*0.28,0,-ang,true); ctx.stroke();
+
+  // End point dot
+  ctx.fillStyle='#f87171';
+  ctx.beginPath(); ctx.arc(ex,ey,5,0,Math.PI*2); ctx.fill();
+
+  // Labels on unit circle
+  txt(ctx,UCX,UCY-UCR-10,'Unit Circle','#334155','center',8);
+  txt(ctx,UCX+UCR*0.32+2,UCY-UCR*0.28+4,'θ='+f.slope.toFixed(1)+'°','#fbbf24','left',9);
+  txt(ctx,UCX-18,(UCY+ly)/2,'Δh','#34d399','right',8);
+  txt(ctx,(UCX+lx)/2,ly+10,'Δx','#60a5fa','center',8);
+
+  // Bottom axis label
+  txt(ctx,UCX+UCR+4,UCY+4,'+','#1e3a5f','left',10);
+  txt(ctx,UCX,UCY-UCR-18,'f₅=atan2(Δh,Δx)','#f87171','center',9);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F6: COMPACTNESS
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF6(f){
+  document.getElementById('f6-result').textContent=f.compact.toFixed(4);
+  document.getElementById('f6-mean').textContent=f.hmean.toFixed(1)+' cm';
+  document.getElementById('f6-max').textContent=f.hmax.toFixed(1)+' cm';
+  document.getElementById('f6-val').textContent=f.compact.toFixed(4);
+  const ins=f.compact<0.70?'📉 Kompaksi rendah — banyak area kosong (bak pickup/kap panjang)':f.compact<0.82?'📦 Kompaksi sedang — profil normal MPV/SUV':'▬ Kompaksi tinggi — bodi sangat kotak dan penuh';
+  document.getElementById('f6-insight').textContent=ins;
+  drawCompact(f);
+  drawCompBar('cvCompComp',VEH_LIST.map(v=>({veh:v,val:computeFeats(v).compact})),'Compactness','#06b6d4');
+}
+
+function drawCompact(f){
+  const r=initCanvas('cvCompact',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','Tinggi (cm)');
+
+  // Bounding box
+  ctx.strokeStyle='#475569'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+  ctx.strokeRect(toX(0),toY(f.hmax),toX(99)-toX(0),H-PB-toY(f.hmax));
+  ctx.setLineDash([]);
+
+  // Fill
+  const col=VEH_COLORS[CUR];
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'88'); g.addColorStop(1,col+'15');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+
+  // Mean line
+  const my=toY(f.hmean);
+  ctx.strokeStyle='#06b6d4'; ctx.lineWidth=2; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(PL,my); ctx.lineTo(W-PR,my); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,W-PR-4,my-6,'h̄='+f.hmean.toFixed(0)+'cm','#06b6d4','right',9);
+
+  // Max line
+  const mxy=toY(f.hmax);
+  ctx.strokeStyle='#34d399'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(PL,mxy); ctx.lineTo(W-PR,mxy); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,W-PR-4,mxy-6,'hmax='+f.hmax.toFixed(0)+'cm','#34d399','right',9);
+
+  // Ratio annotation
+  const rx=W-PR-50;
+  ctx.strokeStyle='#06b6d4'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(rx,my); ctx.lineTo(rx,mxy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-4,my); ctx.lineTo(rx+4,my); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx-4,mxy); ctx.lineTo(rx+4,mxy); ctx.stroke();
+  txt(ctx,rx+16,(my+mxy)/2,'f₆='+f.compact.toFixed(3),'#06b6d4','left',10);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F7: REARCOMP
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF7(f){
+  let sumR=0,cntR=0;
+  f.bins.forEach((b,i)=>{if(i>=50){if(i>=70&&Math.abs(b-f.hmax)<2)return;sumR+=b;cntR++;}});
+  const meanR=cntR>0?sumR/cntR:f.hmean;
+  document.getElementById('f7-result').textContent=f.rearComp.toFixed(4);
+  document.getElementById('f7-mean').textContent=meanR.toFixed(1)+' cm';
+  document.getElementById('f7-val').textContent=f.rearComp.toFixed(4);
+  const ins=f.rearComp<0.50?'🚛 RearComp sangat rendah → bak terbuka (Pickup). Bagian belakang jauh lebih rendah dari atap.':f.rearComp<0.80?'🚐 RearComp sedang → bagasi/atap turun (MPV/Sedan)':'🛻 RearComp tinggi → bagasi penuh kotak (SUV). Belakang tetap setinggi atap.';
+  document.getElementById('f7-insight').textContent=ins;
+  drawRear(f);
+  drawRearComp();
+}
+
+function drawRear(f){
+  const r=initCanvas('cvRear',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','cm');
+
+  // Shade rear half
+  ctx.fillStyle='rgba(232,121,249,0.08)';
+  ctx.fillRect(toX(50),PT,toX(99)-toX(50),ph);
+  txt(ctx,(toX(50)+toX(99))/2,PT+14,'← Separuh BELAKANG (Bin 50–99) →','#e879f9','center',9);
+
+  const col=VEH_COLORS[CUR];
+  const g=ctx.createLinearGradient(0,PT,0,H-PB);
+  g.addColorStop(0,col+'88'); g.addColorStop(1,col+'10');
+  ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+  bins.forEach((b,i)=>ctx.lineTo(toX(i),toY(b)));
+  ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+  ctx.beginPath(); bins.forEach((b,i)=>i===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(i),toY(b)));
+  ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+
+  // Divider
+  ctx.strokeStyle='#e879f9'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(toX(50),PT); ctx.lineTo(toX(50),H-PB); ctx.stroke();
+  txt(ctx,toX(50),H-PB+14,'50%','#e879f9','center',9);
+
+  // Mean rear line
+  let sumR=0,cntR=0;
+  bins.forEach((b,i)=>{if(i>=50){if(i>=70&&Math.abs(b-f.hmax)<2)return;sumR+=b;cntR++;}});
+  const mr=cntR>0?sumR/cntR:f.hmean;
+  ctx.strokeStyle='#e879f9'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  const mry=toY(mr);
+  ctx.beginPath(); ctx.moveTo(toX(50),mry); ctx.lineTo(W-PR,mry); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,W-PR-4,mry-6,'h̄_rear='+mr.toFixed(0),'#e879f9','right',9);
+}
+
+function drawRearComp(){
+  const r=initCanvas('cvRearComp',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  // Compare SUV vs Pickup side by side
+  const vehs=['pickup','suv'];
+  const names=['Pickup (Bak Terbuka)','SUV (Bagasi Penuh)'];
+  const colors=['#f87171','#f59e0b'];
+  const bw=pw/vehs.length*0.8, gap=pw/vehs.length;
+  vehs.forEach((v,i)=>{
+    const f=computeFeats(v);
+    const bins=f.bins, N=100, hmax_axis=220;
+    const toX=b=>(PL+gap*i+gap*0.1)+(b/99)*(gap*0.8);
+    const toY=h=>H-PB-(h/hmax_axis)*ph;
+    const col=colors[i];
+    const g=ctx.createLinearGradient(0,PT,0,H-PB);
+    g.addColorStop(0,col+'88'); g.addColorStop(1,col+'10');
+    ctx.beginPath(); ctx.moveTo(toX(0),H-PB);
+    bins.forEach((b,j)=>ctx.lineTo(toX(j),toY(b)));
+    ctx.lineTo(toX(99),H-PB); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); bins.forEach((b,j)=>j===0?ctx.moveTo(toX(0),toY(b)):ctx.lineTo(toX(j),toY(b)));
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke();
+    txt(ctx,(toX(0)+toX(99))/2,H-PB+14,names[i],col,'center',8);
+    txt(ctx,(toX(0)+toX(99))/2,PT+12,'f₇='+f.rearComp.toFixed(3),col,'center',10);
+    // Rear shade
+    ctx.fillStyle=col+'18'; ctx.fillRect(toX(50),PT,(toX(99)-toX(0))*0.5,ph);
+  });
+  ctx.strokeStyle='#1e293b'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(W/2,PT); ctx.lineTo(W/2,H-PB); ctx.stroke();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  F8: FLATROOF
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshF8(f){
+  const cnt=Math.round(f.flatroof*100);
+  document.getElementById('f8-result').textContent=f.flatroof.toFixed(4)+' ('+cnt+'%)';
+  document.getElementById('f8-cnt').textContent=cnt+' dari 100 bin';
+  document.getElementById('f8-val').textContent=(f.flatroof*100).toFixed(1)+'%';
+  const ins=f.flatroof<0.25?'📉 Atap datar pendek — sedan sporty atau pickup (hanya kabin)':f.flatroof<0.50?'▬ Atap datar sedang — City Car / MPV normal':'⬛ Atap datar panjang — SUV/bus sangat kotak';
+  document.getElementById('f8-insight').textContent=ins;
+  drawFlat(f);
+  drawCompBar('cvFlatComp',VEH_LIST.map(v=>({veh:v,val:computeFeats(v).flatroof*100})),'FlatRoof (%)','#fb923c');
+}
+
+function drawFlat(f){
+  const r=initCanvas('cvFlat',280); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=50,PR=20,PT=18,PB=40;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const bins=f.bins, hmax_axis=260;
+  const toX=b=>PL+(b/99)*pw, toY=h=>H-PB-(h/hmax_axis)*ph;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,4);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,'Bin →','cm');
+  const col=VEH_COLORS[CUR];
+  const thresh=f.hmax*0.9;
+  // Color: flat = orange, non-flat = dim
+  for(let i=0;i<99;i++){
+    const isFlat=bins[i]>=thresh && bins[i+1]>=thresh;
+    const x0=toX(i), x1=toX(i+1);
+    const y0=toY(bins[i]), y1=toY(bins[i+1]);
+    ctx.beginPath(); ctx.moveTo(x0,H-PB); ctx.lineTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x1,H-PB); ctx.closePath();
+    ctx.fillStyle=isFlat?'rgba(251,146,60,0.35)':col+'18'; ctx.fill();
+    ctx.strokeStyle=isFlat?'#fb923c':col+'55'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  }
+  // 90% threshold line
+  ctx.strokeStyle='#fbbf24'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(PL,toY(thresh)); ctx.lineTo(W-PR,toY(thresh)); ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,W-PR-4,toY(thresh)-6,'90% × hmax','#fbbf24','right',9);
+  txt(ctx,W/2,PT+12,'Oranye = bin datar (≥90% puncak) | Total: '+(f.flatroof*100).toFixed(0)+'%','#fb923c','center',9);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  HELPER: GENERIC BAR COMPARISON
+// ══════════════════════════════════════════════════════════════════════════════
+function drawCompBar(canvasId, data, label, color){
+  const r=initCanvas(canvasId); if(!r)return;
+  const {ctx,W,H}=r;
+  const PL=70,PR=20,PT=18,PB=30;
+  const pw=W-PL-PR, ph=H-PT-PB;
+  const vmax=Math.max(...data.map(d=>d.val))*1.12;
+  const bh=ph/data.length*0.65, gap=ph/data.length;
+  drawGrid(ctx,W,H,PL,PR,PT,PB,5,data.length);
+  drawAxes(ctx,W,H,PL,PR,PT,PB,label,'');
+  for(let i=0;i<=5;i++) txt(ctx,PL+(pw/5*i),H-PB+12,(vmax/5*i).toFixed(2),'#475569','center',8);
+
+  data.forEach((d,i)=>{
+    const y=PT+gap*i+(gap-bh)/2;
+    const bw=Math.max(0,(d.val/vmax)*pw);
+    const col=VEH_COLORS[d.veh];
+    ctx.fillStyle=d.veh===CUR?col:col+'44';
+    ctx.strokeStyle=col; ctx.lineWidth=d.veh===CUR?2:1;
+    ctx.beginPath(); ctx.roundRect(PL,y,bw,bh,3); ctx.fill(); ctx.stroke();
+    txt(ctx,PL-6,y+bh/2+4,VEH_NAMES[d.veh],'#64748b','right',9);
+    txt(ctx,PL+bw+6,y+bh/2+4,d.val.toFixed(3),d.veh===CUR?col:'#64748b','left',9);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  COMPARE: RADAR CHART
+// ══════════════════════════════════════════════════════════════════════════════
+function refreshCompare(){
+  drawRadar();
+  buildTable();
+}
+
+function drawRadar(){
+  const r=initCanvas('cvRadar',400); if(!r)return;
+  const {ctx,W,H}=r;
+  const CX=W/2, CY=H/2, RAD=Math.min(W,H)*0.38;
+  const labels=['Panjang','Tinggi','StdDev','PosMax','Slope','Compact','RearComp','FlatRoof'];
+  const N=8, angleStep=Math.PI*2/N;
+  const MINS=[3.20,1.28,0.251,0.23,14.6,0.51,0.39,0.14];
+  const MAXS=[5.46,2.05,0.460,1.03,58.0,0.96,1.00,0.79];
+
+  // Grid
+  [0.25,0.5,0.75,1.0].forEach(r2=>{
+    ctx.strokeStyle=`rgba(255,255,255,${0.05+r2*0.05})`; ctx.lineWidth=1;
+    ctx.beginPath();
+    for(let i=0;i<N;i++){const a=angleStep*i-Math.PI/2; const px=CX+Math.cos(a)*RAD*r2, py=CY+Math.sin(a)*RAD*r2; i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+    ctx.closePath(); ctx.stroke();
+    txt(ctx,CX+4,CY-RAD*r2-4,(r2*100).toFixed(0)+'%','#334155','left',8);
+  });
+  for(let i=0;i<N;i++){
+    const a=angleStep*i-Math.PI/2;
+    ctx.strokeStyle='#1e293b'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(CX,CY); ctx.lineTo(CX+Math.cos(a)*RAD,CY+Math.sin(a)*RAD); ctx.stroke();
+    const lx=CX+Math.cos(a)*(RAD+22), ly=CY+Math.sin(a)*(RAD+22);
+    txt(ctx,lx,ly+4,labels[i],'#64748b','center',9);
+  }
+
+  // Per vehicle
+  VEH_LIST.forEach(v=>{
+    const f=computeFeats(v);
+    const vals=[f.pjg,f.hmax/100,f.stddev,f.fposmax,f.slope,f.compact,f.rearComp,f.flatroof];
+    const norm=vals.map((val,i)=>Math.min(1,Math.max(0,(val-MINS[i])/(MAXS[i]-MINS[i]))));
+    const col=VEH_COLORS[v];
+    ctx.strokeStyle=col; ctx.lineWidth=v===CUR?3:1.5;
+    ctx.fillStyle=col+(v===CUR?'30':'15');
+    ctx.beginPath();
+    norm.forEach((n,i)=>{const a=angleStep*i-Math.PI/2; const px=CX+Math.cos(a)*RAD*n, py=CY+Math.sin(a)*RAD*n; i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+
+  // Legend
+  VEH_LIST.forEach((v,i)=>{
+    const lx=20+i*(W/VEH_LIST.length);
+    ctx.fillStyle=VEH_COLORS[v]; ctx.fillRect(lx,H-20,14,10);
+    txt(ctx,lx+17,H-12,VEH_NAMES[v],'#94a3b8','left',9);
+  });
+}
+
+function buildTable(){
+  const el=document.getElementById('compareTable'); if(!el) return;
+  const feats=['Panjang (m)','Tinggi (cm)','StdDev','PosMax','Slope (°)','Compact','Rear','FlatRoof (%)'];
+  const getVals=v=>{const f=computeFeats(v); return [f.pjg,f.hmax,f.stddev,f.fposmax,f.slope,f.compact,f.rearComp,f.flatroof*100];};
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:.78rem"><thead><tr><th style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#475569;text-align:left">Fitur</th>`;
+  VEH_LIST.forEach(v=>{ html+=`<th style="padding:8px 12px;border-bottom:1px solid #1e293b;color:${VEH_COLORS[v]};text-align:center">${VEH_NAMES[v]}</th>`; });
+  html+='</tr></thead><tbody>';
+  feats.forEach((f,fi)=>{
+    const allVals=VEH_LIST.map(v=>getVals(v)[fi]);
+    const mn=Math.min(...allVals), mx=Math.max(...allVals);
+    html+=`<tr><td style="padding:6px 12px;border-bottom:1px solid #0f172a;color:#94a3b8">${f}</td>`;
+    VEH_LIST.forEach((v,vi)=>{
+      const val=allVals[vi];
+      const norm=(mx>mn)?(val-mn)/(mx-mn):0.5;
+      const isCur=v===CUR;
+      const col=VEH_COLORS[v];
+      html+=`<td style="padding:6px 12px;border-bottom:1px solid #0f172a;text-align:center;font-family:'JetBrains Mono',monospace;color:${isCur?col:'#64748b'};font-weight:${isCur?700:400};background:${isCur?col+'15':'transparent'}">${val.toFixed(3)}</td>`;
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════════════
+window.addEventListener('load',()=>{ refreshAll(); });
+window.addEventListener('resize',()=>{ refreshAll(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualisasi GLBB — Pengukuran Panjang Kendaraan</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0d1a;
+    color: #e0e8ff;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 0.88rem;
+    margin-bottom: 32px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .card.full { grid-column: 1 / -1; }
+  .card.accent-blue  { border-color: #3b82f6; }
+  .card.accent-violet{ border-color: #8b5cf6; }
+  .card.accent-green { border-color: #10b981; }
+
+  .card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-blue   { background: #3b82f6; }
+  .dot-violet { background: #8b5cf6; }
+  .dot-green  { background: #10b981; }
+  .dot-amber  { background: #f59e0b; }
+
+  canvas { width: 100%; display: block; border-radius: 8px; }
+
+  /* ── Controls ── */
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ctrl-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  .ctrl-group .val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #60a5fa;
+    margin-bottom: 6px;
+  }
+
+  input[type=range] {
+    width: 100%;
+    accent-color: #6366f1;
+    cursor: pointer;
+  }
+
+  /* ── Formula ── */
+  .formula-box {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 16px;
+  }
+
+  .formula-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    line-height: 2;
+  }
+
+  .f-blue   { color: #60a5fa; font-weight: 700; }
+  .f-violet { color: #a78bfa; font-weight: 700; }
+  .f-green  { color: #34d399; font-weight: 700; }
+  .f-amber  { color: #fbbf24; font-weight: 700; }
+  .f-white  { color: #f1f5f9; }
+  .f-gray   { color: #64748b; }
+
+  /* ── Sensor diagram ── */
+  .sensor-diagram {
+    position: relative;
+    height: 180px;
+    background: #0f172a;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+  }
+
+  /* ── Result badge ── */
+  .result-badge {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 12px 20px;
+    text-align: center;
+  }
+
+  .badge .bl { font-size: 0.72rem; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .badge .bv { font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; }
+  .bv-blue   { color: #60a5fa; }
+  .bv-violet { color: #a78bfa; }
+  .bv-green  { color: #34d399; }
+  .bv-amber  { color: #fbbf24; }
+
+  .decomp-legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+
+  .leg-box {
+    width: 20px;
+    height: 14px;
+    border-radius: 3px;
+    opacity: 0.8;
+  }
+
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+    .card.full { grid-column: 1; }
+    .controls { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Visualisasi GLBB — Pengukuran Panjang Kendaraan</h1>
+<p class="subtitle">Gerak Lurus Berubah Beraturan · Hukum Kinematika Newton · Edge AI Vehicle Classifier</p>
+
+<div class="grid">
+
+  <!-- ── Controls ── -->
+  <div class="card full accent-blue">
+    <div class="card-title"><span class="dot dot-blue"></span>Parameter Simulasi</div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>Kecepatan Masuk V<sub>in</sub></label>
+        <div class="val" id="lbl-vin">2.0 km/h</div>
+        <input type="range" id="sl-vin" min="1" max="15" step="0.5" value="2">
+      </div>
+      <div class="ctrl-group">
+        <label>Kecepatan Keluar V<sub>out</sub></label>
+        <div class="val" id="lbl-vout">3.2 km/h</div>
+        <input type="range" id="sl-vout" min="1" max="15" step="0.5" value="3.2">
+      </div>
+      <div class="ctrl-group">
+        <label>Waktu Tutup Sensor t<sub>durasi</sub></label>
+        <div class="val" id="lbl-t">7.3 s</div>
+        <input type="range" id="sl-t" min="1" max="20" step="0.1" value="7.3">
+      </div>
+    </div>
+
+    <div class="result-badge">
+      <div class="badge"><div class="bl">V<sub>in</sub></div><div class="bv bv-blue" id="r-vin">—</div></div>
+      <div class="badge"><div class="bl">V<sub>out</sub></div><div class="bv bv-violet" id="r-vout">—</div></div>
+      <div class="badge"><div class="bl">Akselerasi a</div><div class="bv bv-amber" id="r-a">—</div></div>
+      <div class="badge"><div class="bl">t<sub>durasi</sub></div><div class="bv bv-blue" id="r-t">—</div></div>
+      <div class="badge" style="border-color:#10b981"><div class="bl">Panjang Kendaraan</div><div class="bv bv-green" id="r-panjang">—</div></div>
+    </div>
+  </div>
+
+  <!-- ── Grafik v-t ── -->
+  <div class="card accent-violet">
+    <div class="card-title"><span class="dot dot-violet"></span>Grafik Kecepatan–Waktu (v-t)</div>
+    <canvas id="cvVT" height="280"></canvas>
+    <div class="decomp-legend">
+      <div class="leg-item"><div class="leg-box" style="background:#3b82f6"></div>Luas Persegi = V<sub>in</sub>·t (Term 1)</div>
+      <div class="leg-item"><div class="leg-box" style="background:#a78bfa"></div>Luas Segitiga = ½·a·t² (Term 2)</div>
+    </div>
+  </div>
+
+  <!-- ── Grafik posisi ── -->
+  <div class="card accent-green">
+    <div class="card-title"><span class="dot dot-green"></span>Grafik Posisi Ujung Depan vs Waktu (s-t)</div>
+    <canvas id="cvST" height="280"></canvas>
+  </div>
+
+  <!-- ── Diagram Sensor ── -->
+  <div class="card full accent-violet">
+    <div class="card-title"><span class="dot dot-violet"></span>Diagram Fisik — Posisi Sensor & Kendaraan</div>
+    <canvas id="cvSensor" height="200"></canvas>
+  </div>
+
+  <!-- ── Dekomposisi Rumus ── -->
+  <div class="card full">
+    <div class="card-title"><span class="dot dot-green"></span>Dekomposisi Matematis Rumus GLBB</div>
+    <div class="formula-box">
+      <div class="formula-row">
+        <span class="f-green">Panjang</span>
+        <span class="f-white">=</span>
+        <span class="f-blue">( V<sub>in</sub> × t<sub>durasi</sub> )</span>
+        <span class="f-white">+</span>
+        <span class="f-violet">( 0.5 × a × t<sub>durasi</sub>² )</span>
+      </div>
+      <div class="formula-row" style="margin-top:4px">
+        <span class="f-green">Panjang</span>
+        <span class="f-white">=</span>
+        <span class="f-blue" id="fml-term1">—</span>
+        <span class="f-white">+</span>
+        <span class="f-violet" id="fml-term2">—</span>
+        <span class="f-white">=</span>
+        <span class="f-green" id="fml-total">—</span>
+      </div>
+      <hr style="border-color:#1e293b; margin: 14px 0">
+      <div class="formula-row" style="font-size:0.82rem; color:#64748b; font-family:'Inter',sans-serif;">
+        <span>Angka <strong style="color:#fbbf24">0.5</strong> berasal dari rumus luas segitiga (½ × alas × tinggi) yang terbentuk oleh pertambahan kecepatan akibat akselerasi pada grafik v-t di atas.</span>
+      </div>
+      <div class="formula-row" style="margin-top:8px; font-size:0.82rem; color:#64748b; font-family:'Inter',sans-serif;">
+        <span>Akselerasi: <strong style="color:#fbbf24">a</strong> = (V<sub>out</sub> − V<sub>in</sub>) / t<sub>durasi</sub>  →  didapat dari selisih waktu <strong>ekor</strong> kendaraan antara S1 dan S2 vs selisih waktu <strong>moncong</strong> antara S1 dan S2.</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /grid -->
+
+<script>
+// ── Helpers ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const kmhToCms = v => v / 3.6 * 100;  // km/h → cm/s
+
+function drawAxes(ctx, W, H, pad, xLabel, yLabel, color='#334155') {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad/2);
+  ctx.lineTo(pad, H - pad);
+  ctx.lineTo(W - pad/2, H - pad);
+  ctx.stroke();
+
+  // Arrow X
+  ctx.beginPath();
+  ctx.moveTo(W - pad/2, H - pad);
+  ctx.lineTo(W - pad/2 - 8, H - pad - 5);
+  ctx.moveTo(W - pad/2, H - pad);
+  ctx.lineTo(W - pad/2 - 8, H - pad + 5);
+  ctx.stroke();
+
+  // Arrow Y
+  ctx.beginPath();
+  ctx.moveTo(pad, pad/2);
+  ctx.lineTo(pad - 5, pad/2 + 8);
+  ctx.moveTo(pad, pad/2);
+  ctx.lineTo(pad + 5, pad/2 + 8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '12px Inter';
+  ctx.textAlign = 'center';
+  ctx.fillText(xLabel, W - pad/2 + 12, H - pad + 4);
+  ctx.save();
+  ctx.translate(pad - 14, H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+}
+
+function gridLines(ctx, W, H, pad, nx, ny) {
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  for (let i = 1; i <= nx; i++) {
+    const x = pad + (W - pad - pad/2) / nx * i;
+    ctx.beginPath(); ctx.moveTo(x, pad/2); ctx.lineTo(x, H - pad); ctx.stroke();
+  }
+  for (let i = 1; i <= ny; i++) {
+    const y = H - pad - (H - pad - pad/2) / ny * i;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad/2, y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function label(ctx, x, y, txt, color='#94a3b8', align='center', size=11) {
+  ctx.fillStyle = color;
+  ctx.font = `${size}px Inter`;
+  ctx.textAlign = align;
+  ctx.fillText(txt, x, y);
+}
+
+// ── Main draw ────────────────────────────────────────────────────────────────
+function draw() {
+  const vinKmh  = parseFloat($('sl-vin').value);
+  const voutKmh = parseFloat($('sl-vout').value);
+  const tdur    = parseFloat($('sl-t').value);
+
+  const vin  = kmhToCms(vinKmh);
+  const vout = kmhToCms(voutKmh);
+  const a    = (vout - vin) / tdur;
+  const term1 = vin  * tdur;
+  const term2 = 0.5 * a * tdur * tdur;
+  const panjang = Math.max(0, term1 + term2);
+
+  // Labels
+  $('lbl-vin').textContent  = vinKmh.toFixed(1) + ' km/h';
+  $('lbl-vout').textContent = voutKmh.toFixed(1) + ' km/h';
+  $('lbl-t').textContent    = tdur.toFixed(1) + ' s';
+
+  $('r-vin').textContent    = vinKmh.toFixed(2) + ' km/h (' + (vin/100).toFixed(3) + ' m/s)';
+  $('r-vout').textContent   = voutKmh.toFixed(2) + ' km/h (' + (vout/100).toFixed(3) + ' m/s)';
+  $('r-a').textContent      = (a/100).toFixed(4) + ' m/s²';
+  $('r-t').textContent      = tdur.toFixed(2) + ' s';
+  $('r-panjang').textContent = (panjang/100).toFixed(3) + ' m (' + panjang.toFixed(1) + ' cm)';
+
+  $('fml-term1').textContent = term1.toFixed(1) + ' cm';
+  $('fml-term2').textContent = term2.toFixed(1) + ' cm';
+  $('fml-total').textContent = panjang.toFixed(1) + ' cm = ' + (panjang/100).toFixed(3) + ' m';
+
+  drawVT(vin, vout, tdur, a, term1, term2);
+  drawST(vin, vout, tdur, a, panjang);
+  drawSensor(vin, vout, tdur, panjang);
+}
+
+// ── v-t Graf ─────────────────────────────────────────────────────────────────
+function drawVT(vin, vout, tdur, a, term1, term2) {
+  const cv = $('cvVT');
+  const W = cv.offsetWidth || 480;
+  const H = parseInt(cv.getAttribute('height')) || 280;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = 52;
+  const plotW = W - PAD - PAD/2;
+  const plotH = H - PAD - PAD/2;
+
+  const vmax = Math.max(vin, vout) * 1.18;
+  const toX = t  => PAD + (t  / tdur) * plotW;
+  const toY = v  => H - PAD - (v / vmax) * plotH;
+
+  gridLines(ctx, W, H, PAD, 5, 4);
+  drawAxes(ctx, W, H, PAD, 'Waktu (s)', 'Kecepatan (cm/s)');
+
+  // Tick labels X
+  for (let i = 0; i <= 5; i++) {
+    const tv = tdur * i / 5;
+    const x  = toX(tv);
+    label(ctx, x, H - PAD + 16, tv.toFixed(1));
+  }
+  // Tick labels Y
+  for (let i = 0; i <= 4; i++) {
+    const v = vmax * i / 4;
+    const y = toY(v);
+    label(ctx, PAD - 8, y + 4, Math.round(v), '#94a3b8', 'right', 10);
+  }
+
+  // ── Term 1: Rectangle ──
+  ctx.fillStyle = 'rgba(59,130,246,0.25)';
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 0;
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(0));
+  ctx.lineTo(toX(tdur), toY(0));
+  ctx.lineTo(toX(tdur), toY(vin));
+  ctx.lineTo(toX(0), toY(vin));
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Term 2: Triangle ──
+  ctx.fillStyle = 'rgba(139,92,246,0.30)';
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(vin));
+  ctx.lineTo(toX(tdur), toY(vin));
+  ctx.lineTo(toX(tdur), toY(vout));
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Velocity line ──
+  ctx.strokeStyle = '#fbbf24';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(vin));
+  ctx.lineTo(toX(tdur), toY(vout));
+  ctx.stroke();
+
+  // ── Dashed reference lines ──
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  ctx.moveTo(PAD, toY(vin));
+  ctx.lineTo(toX(tdur), toY(vin));
+  ctx.stroke();
+  ctx.strokeStyle = '#a78bfa';
+  ctx.beginPath();
+  ctx.moveTo(PAD, toY(vout));
+  ctx.lineTo(toX(tdur), toY(vout));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Points ──
+  [[0, vin, '#60a5fa', 'V_in'], [tdur, vout, '#c084fc', 'V_out']].forEach(([t, v, c, lbl]) => {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.arc(toX(t), toY(v), 6, 0, Math.PI*2);
+    ctx.fill();
+    label(ctx, toX(t) + (t===0 ? 24 : -4), toY(v) - 10, lbl, c, t===0 ? 'left' : 'right', 11);
+  });
+
+  // ── Brace label t_dur ──
+  const brY = H - PAD + 32;
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(toX(0), brY); ctx.lineTo(toX(tdur), brY); ctx.stroke();
+  label(ctx, (toX(0)+toX(tdur))/2, brY + 14, 't_durasi = ' + tdur.toFixed(1) + ' s', '#fbbf24', 'center', 10);
+
+  // Area labels
+  label(ctx, (toX(0)+toX(tdur))/2, (toY(0)+toY(vin))/2 + 4,
+        'Luas □ = ' + term1.toFixed(0) + ' cm', '#60a5fa', 'center', 10);
+  if (Math.abs(term2) > 5)
+    label(ctx, toX(tdur) - plotW*0.12, toY(vin) - Math.abs(toY(vout)-toY(vin))/2,
+          'Luas △ = ' + term2.toFixed(0) + ' cm', '#c084fc', 'right', 10);
+}
+
+// ── s-t Graf ─────────────────────────────────────────────────────────────────
+function drawST(vin, vout, tdur, a, panjang) {
+  const cv = $('cvST');
+  const W = cv.offsetWidth || 480;
+  const H = parseInt(cv.getAttribute('height')) || 280;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = 52;
+  const plotW = W - PAD - PAD/2;
+  const plotH = H - PAD - PAD/2;
+  const smax = Math.max(panjang, 10) * 1.1;
+
+  const toX = t => PAD + (t / tdur) * plotW;
+  const toY = s => H - PAD - (s / smax) * plotH;
+
+  gridLines(ctx, W, H, PAD, 5, 4);
+  drawAxes(ctx, W, H, PAD, 'Waktu (s)', 'Posisi (cm)');
+
+  // Tick labels X
+  for (let i = 0; i <= 5; i++) {
+    const tv = tdur * i / 5;
+    label(ctx, toX(tv), H - PAD + 16, tv.toFixed(1));
+  }
+  // Tick labels Y
+  for (let i = 0; i <= 4; i++) {
+    const sv = smax * i / 4;
+    label(ctx, PAD - 8, toY(sv) + 4, Math.round(sv), '#94a3b8', 'right', 10);
+  }
+
+  // Curve
+  const steps = 120;
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = '#34d399';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const t = tdur * i / steps;
+    const s = vin * t + 0.5 * a * t * t;
+    i === 0 ? ctx.moveTo(toX(t), toY(s)) : ctx.lineTo(toX(t), toY(s));
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // End point
+  ctx.fillStyle = '#34d399';
+  ctx.beginPath();
+  ctx.arc(toX(tdur), toY(panjang), 7, 0, Math.PI*2);
+  ctx.fill();
+
+  label(ctx, toX(tdur) - 6, toY(panjang) - 12,
+        'Panjang = ' + (panjang/100).toFixed(3) + ' m', '#34d399', 'right', 11);
+
+  // Dashed to panjang
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(PAD, toY(panjang)); ctx.lineTo(toX(tdur), toY(panjang)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(tdur), H-PAD); ctx.lineTo(toX(tdur), toY(panjang)); ctx.stroke();
+  ctx.setLineDash([]);
+
+  label(ctx, PAD - 8, toY(panjang) + 4, Math.round(panjang), '#34d399', 'right', 10);
+}
+
+// ── Sensor Diagram ───────────────────────────────────────────────────────────
+function drawSensor(vin, vout, tdur, panjang) {
+  const cv = $('cvSensor');
+  const W = cv.offsetWidth || 900;
+  const H = parseInt(cv.getAttribute('height')) || 200;
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  const GROUND = H - 36;
+  const PAD_L  = 60;
+  const PAD_R  = 60;
+  const TRACK  = W - PAD_L - PAD_R;
+
+  // Ground
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(PAD_L, GROUND); ctx.lineTo(W - PAD_R, GROUND); ctx.stroke();
+  label(ctx, W/2, GROUND + 20, 'Jalur Kendaraan (Tampak Samping)', '#475569', 'center', 11);
+
+  // S1 tiang
+  const s1X = PAD_L + TRACK * 0.25;
+  const s2X = PAD_L + TRACK * 0.55;
+  const POLE_H = 100;
+  const sensorY = GROUND - POLE_H;
+
+  function drawSensorPost(x, name, col) {
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, GROUND); ctx.lineTo(x, sensorY + 10); ctx.stroke();
+
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.roundRect(x - 22, sensorY - 8, 44, 20, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, x, sensorY + 6);
+
+    // Laser beam (dashed down)
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(x, sensorY + 12); ctx.lineTo(x, GROUND); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  drawSensorPost(s1X, 'Sensor 1', '#3b82f6');
+  drawSensorPost(s2X, 'Sensor 2', '#8b5cf6');
+
+  // Distance S1-S2 brace
+  const brY = sensorY - 16;
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(s1X, brY); ctx.lineTo(s2X, brY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(s1X, brY-4); ctx.lineTo(s1X, brY+4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(s2X, brY-4); ctx.lineTo(s2X, brY+4); ctx.stroke();
+  label(ctx, (s1X+s2X)/2, brY - 6, '53 cm (JARAK_ANTAR_SENSOR)', '#64748b', 'center', 10);
+
+  // ── Animasi Kendaraan ──
+  // Mobil sederhana: kotak proporsional dengan panjang terukur
+  const scalePx = TRACK / 700;   // 700 cm = full track dalam px
+  const carW    = Math.min(panjang * scalePx, TRACK * 0.6);
+  const carH    = 48;
+  const carY    = GROUND - carH;
+
+  // Posisi animasi
+  const now    = (Date.now() / 5000) % 1;  // 0..1 loop
+  const carX   = PAD_L - carW + now * (TRACK + carW * 2);  // kiri → kanan
+
+  // Body
+  ctx.fillStyle = '#1e3a5f';
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(carX, carY, carW, carH, 6);
+  ctx.fill(); ctx.stroke();
+
+  // Windshield
+  const wW = carW * 0.18;
+  ctx.fillStyle = 'rgba(96,165,250,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(carX + carW * 0.65, carY + 4);
+  ctx.lineTo(carX + carW * 0.65 + wW, carY + 4);
+  ctx.lineTo(carX + carW * 0.65 + wW, carY + carH * 0.7);
+  ctx.lineTo(carX + carW * 0.65, carY + carH * 0.7);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wheels
+  [0.15, 0.82].forEach(rx => {
+    ctx.fillStyle = '#334155';
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(carX + carW * rx, GROUND, 10, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+  });
+
+  // "Bumper depan" label
+  const bumperX = carX + carW;
+  if (bumperX > PAD_L && bumperX < W - PAD_R) {
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(bumperX, carY - 6); ctx.lineTo(bumperX, GROUND); ctx.stroke();
+    ctx.setLineDash([]);
+    label(ctx, bumperX + 4, carY - 10, 'Moncong', '#fbbf24', 'left', 9);
+  }
+
+  // Panjang brace under car
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 1;
+  const pbY = GROUND + 14;
+  ctx.beginPath(); ctx.moveTo(carX, pbY); ctx.lineTo(carX + carW, pbY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(carX, pbY-3); ctx.lineTo(carX, pbY+3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(carX + carW, pbY-3); ctx.lineTo(carX + carW, pbY+3); ctx.stroke();
+  label(ctx, carX + carW/2, pbY + 12, (panjang/100).toFixed(2) + ' m', '#34d399', 'center', 9);
+
+  // Sensor beam hits car (turn red if car covers sensor)
+  function beamHitscar(sx) {
+    return sx > carX && sx < carX + carW;
+  }
+  [s1X, s2X].forEach((sx, idx) => {
+    if (beamHitscar(sx)) {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4,3]);
+      ctx.beginPath();
+      ctx.moveTo(sx, sensorY + 12);
+      ctx.lineTo(sx, carY + carH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      label(ctx, sx + 14, (sensorY + carY)/2, '⬤ Tertutup', '#ef4444', 'left', 10);
+    }
+  });
+
+  requestAnimationFrame(() => { draw(); });
+}
+
+// ── Event listeners ──────────────────────────────────────────────────────────
+['sl-vin','sl-vout','sl-t'].forEach(id => {
+  $(id).addEventListener('input', draw);
+});
+
+// Start
+draw();
+</script>
+</body>
+</html>

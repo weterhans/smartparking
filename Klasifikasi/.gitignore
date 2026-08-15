@@ -1,0 +1,101 @@
+# ── Arduino / ESP32 ──────────────────────────────────────────
+# Build artifacts
+build/
+*.elf
+*.bin
+*.hex
+*.map
+
+# Arduino IDE cache
+.arduino15/
+libraries/
+
+# ── Python ───────────────────────────────────────────────────
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# ── Output / Hasil Analisis ───────────────────────────────────
+# Gambar output (bisa di-generate ulang dari script)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+!docs/images/         # Kecuali gambar di folder dokumentasi
+
+# Dokumen Word output
+*.docx
+*.xlsx
+*.csv
+
+# ── IDE / Editor ─────────────────────────────────────────────
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ── Sistem Operasi ────────────────────────────────────────────
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ── Keamanan — JANGAN COMMIT ──────────────────────────────────
+# Kredensial WiFi (jika disimpan terpisah)
+secrets.h
+credentials.h
+*.env
+.env.*
+
+# File konfigurasi lokal
+config.local.*
+local_config.*
+
+# ── File Sementara ────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
