@@ -51,7 +51,8 @@ Folder ini berisi kode untuk bagian **Website / Backend** pada sistem Smart Park
 
 ### Komponen Hardware (Raspberry Pi)
 
-- 1× Raspberry Pi (model 3B+ / 4 atau sejenisnya)
+- 1× Raspberry Pi 4 Model B
+- 1x ESP32 Devkit V1
 - 1× Modul NFC **PN532** (mode I2C)
 - 1× Layar **LCD TFT 2.6 Inch** (mode SPI)
 - 1× **Push Button** (tombol fisik)
