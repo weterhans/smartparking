@@ -231,7 +231,7 @@ Website/
 
 ## 👤 Penulis
 
-- **Nama**: Joko Febrianto
+- **Nama**: Joko
 - **Bagian**: Website / Backend Flask
 
 ---
